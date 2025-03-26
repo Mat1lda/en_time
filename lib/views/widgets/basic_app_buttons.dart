@@ -1,4 +1,5 @@
 
+import 'package:en_time/components/colors.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -15,16 +16,24 @@ class BasicAppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          minimumSize: Size.fromHeight(height ?? 80),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: AppColors.primaryG),
+        borderRadius: BorderRadius.circular(30)
+      ),
 
-        ),
-        child: Text(
-            title,
-          style: TextStyle(color: Colors.white, fontSize: 20),
-        )
+      child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent, // Nền trong suốt để lộ gradient
+            shadowColor: Colors.transparent,
+            minimumSize: Size.fromHeight(height ?? 80),
+          ),
+          child: Text(
+              title,
+            style: TextStyle(color: Colors.white, fontSize: 20),
+          )
+      ),
     );
   }
 }

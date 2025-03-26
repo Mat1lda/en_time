@@ -25,7 +25,6 @@ class Apptheme {
               borderSide: const BorderSide(color: Colors.black, width: 0.4))),
       elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
               elevation: 0,
               textStyle:
                   const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
