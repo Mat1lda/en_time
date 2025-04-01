@@ -5,6 +5,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
+import 'package:en_time/database/models/subject_model.dart';
+import 'package:en_time/database/models/deadline_model.dart';
+import 'package:en_time/database/services/subject_services.dart';
+import 'package:en_time/database/services/deadline_services.dart';
 
 class CustomTimetableScreem extends StatefulWidget{
   @override
@@ -13,33 +17,37 @@ class CustomTimetableScreem extends StatefulWidget{
 
 class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
   final CalendarDataSource _dataSource = _DataSource(<Appointment>[]);
-  final List<String> _subjectCollection = <String>[];//danh sach tieu de
-  final List<DateTime> _startTimeCollection = <DateTime>[];
-  final List<DateTime> _endTimeCollection = <DateTime>[];
   final List<Color> _colorCollection = <Color>[]; 
   List<TimeRegion> _specialTimeRegion = <TimeRegion>[];
   CalendarView _selectedView = CalendarView.week; 
-  // final Map<CalendarView, String> _viewNames = {
-  //   CalendarView.day: "Ngày",
-  //   CalendarView.week: "Tuần",
-  //   CalendarView.workWeek: "Tuần làm việc",
-  //   CalendarView.month: "Tháng",
-  //   CalendarView.timelineDay: "Dòng thời gian ngày",
-  //   CalendarView.timelineWeek: "Dòng thời gian tuần",
-  //   CalendarView.schedule: "Lịch trình",
-  // };
+  final SubjectService _subjectService = SubjectService();
+  final DeadlineService _deadlineService = DeadlineService();
+
   @override
   void initState() {
-    _getSubjectCollection();
-    _getStartTimeCollection();
-    _getEndTimeCollection();
     _getColorCollection();
+    _loadAppointments();
     super.initState();
+  }
+  void _loadAppointments() {
+    _subjectService.getAllSubjects().listen((subjects) {
+      final subjectAppointments = subjects.map((subject) => subject.toAppointment()).toList();
+      _deadlineService.getAllDeadlines().listen((deadlines) {
+        final deadlineAppointments = deadlines.map((deadline) => deadline.toAppointment()).toList();
+        final allAppointments = [...subjectAppointments, ...deadlineAppointments];
+        setState(() {
+          _dataSource.appointments!.clear();
+          _dataSource.appointments!.addAll(allAppointments);
+          _dataSource.notifyListeners(CalendarDataSourceAction.reset, _dataSource.appointments!);
+        });
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       home: Scaffold(
         appBar: BasicAppbar(
           backgroundColor: Colors.white,
@@ -48,33 +56,10 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
-            _showDeadlineDialog();
+            _showAddMenu();
           },
           child: Icon(Icons.add),
         ),
-        // appBar: AppBar(
-        //   title: Text('Lịch biểu'),
-        //   actions: [
-        //     DropdownButton<CalendarView>(
-        //       value: _selectedView,
-        //       icon: Icon(Icons.calendar_view_day),
-        //       onChanged: (CalendarView? newValue) {
-        //         if (newValue != null) {
-        //           setState(() {
-        //             _selectedView = newValue;
-        //             _dataSource.notifyListeners(CalendarDataSourceAction.reset, _dataSource.appointments!);
-        //           });
-        //         }
-        //       },
-        //       items: _viewNames.entries.map((entry) {
-        //         return DropdownMenuItem<CalendarView>(
-        //           value: entry.key,
-        //           child: Text(entry.value),
-        //         );
-        //       }).toList(),
-        //     ),
-        //   ],
-        // ),
         body: SafeArea(
           child: SfCalendar(
             dataSource: _dataSource,
@@ -90,9 +75,30 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
               CalendarView.timelineMonth,
               CalendarView.schedule
             ],
-            // monthViewSettings: MonthViewSettings(
-            //   appointmentDisplayMode: MonthAppointmentDisplayMode.appointment,
-            // ),
+            minDate: DateTime(DateTime.now().year, 1, 1),
+            maxDate: DateTime(DateTime.now().year + 1, 12, 31),
+            headerHeight: 50,
+            viewHeaderHeight: 60,
+            firstDayOfWeek: 1,
+            timeSlotViewSettings: TimeSlotViewSettings(
+              startHour: 7,
+              endHour: 21,
+              timeFormat: 'HH:mm',
+              nonWorkingDays: <int>[DateTime.saturday, DateTime.sunday],
+              timeIntervalHeight: 60,
+              timeTextStyle: TextStyle(
+                fontWeight: FontWeight.w500, 
+                fontSize: 12,
+                color: Colors.black.withOpacity(0.7)
+              ),
+              dayFormat: 'EEE',
+            ),
+            monthViewSettings: MonthViewSettings(
+              appointmentDisplayMode: MonthAppointmentDisplayMode.appointment,
+              showAgenda: true,
+            ),
+            todayHighlightColor: Theme.of(context).primaryColor,
+            cellBorderColor: Colors.grey.withOpacity(0.2),
             onTap: _onCalendarTapped,
             onLongPress: _onCalendarLongPressed,
             specialRegions: _specialTimeRegion,
@@ -106,62 +112,42 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
   void viewChanged(ViewChangedDetails viewChangedDetails) {
     List<DateTime> visibleDates = viewChangedDetails.visibleDates;
     List<TimeRegion> timeRegion = <TimeRegion>[];
-    List<Appointment> appointments = <Appointment>[];
-    _dataSource.appointments!.clear();
-
+    
     for (int i = 0; i < visibleDates.length; i++) {
-      if (visibleDates[i].weekday == 6 || visibleDates[i].weekday == 7) {
+      if (visibleDates[i].weekday == 7) {
         continue;
       }
       timeRegion.add(TimeRegion(
           startTime: DateTime(visibleDates[i].year, visibleDates[i].month,
-              visibleDates[i].day, 13, 0, 0),
+              visibleDates[i].day, 12, 0, 0),
           endTime: DateTime(visibleDates[i].year, visibleDates[i].month,
-              visibleDates[i].day, 14, 0, 0),
-          text: 'Break',
+              visibleDates[i].day, 13, 0, 0),
+          text: 'Nghỉ',
+          color: Colors.grey.withOpacity(0.1),
           enablePointerInteraction: false));
-      SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
-        setState(() {
-          _specialTimeRegion = timeRegion;
-        });
+    }
+    
+    SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
+      setState(() {
+        _specialTimeRegion = timeRegion;
       });
-      for (int j = 0; j < _startTimeCollection.length; j++) {
-        DateTime startTime = DateTime(
-            visibleDates[i].year,
-            visibleDates[i].month,
-            visibleDates[i].day,
-            _startTimeCollection[j].hour,
-            _startTimeCollection[j].minute,
-            _startTimeCollection[j].second);
-        DateTime endTime = DateTime(
-            visibleDates[i].year,
-            visibleDates[i].month,
-            visibleDates[i].day,
-            _endTimeCollection[j].hour,
-            _endTimeCollection[j].minute,
-            _endTimeCollection[j].second);
-        Random random = Random();
-        appointments.add(Appointment(
-            startTime: startTime,
-            endTime: endTime,
-            subject: _subjectCollection[random.nextInt(9)],
-            color: _colorCollection[random.nextInt(9)]));
-      }
-    }
-    for (int i = 0; i < appointments.length; i++) {
-      _dataSource.appointments!.add(appointments[i]);
-    }
-    _dataSource.notifyListeners(
-        CalendarDataSourceAction.reset, _dataSource.appointments!);
+    });
   }
+
   void _onCalendarTapped(CalendarTapDetails details) {
     if (details.targetElement == CalendarElement.appointment && details.appointments != null) {
       Appointment selectedAppointment = details.appointments!.first;
-      _showAppointmentDialog(isEdit: true, appointment: selectedAppointment);
+      // Check if it's a deadline or a subject based on notes field
+      if (selectedAppointment.notes == 'deadline') {
+        _showDeadlineEditDialog(selectedAppointment);
+      } else {
+        _showAppointmentDialog(isEdit: true, appointment: selectedAppointment);
+      }
     } else {
       _showAppointmentDialog(isEdit: false, selectedDate: details.date);
     }
   }
+
   void _onCalendarLongPressed(CalendarLongPressDetails details) {
     if (details.targetElement == CalendarElement.appointment && details.appointments != null) {
       Appointment selectedAppointment = details.appointments!.first;
@@ -171,15 +157,15 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
 
   void _showAppointmentDialog({required bool isEdit, Appointment? appointment, DateTime? selectedDate}) {
     TextEditingController subjectController = TextEditingController(text: isEdit ? appointment!.subject : '');
-    Color selectedColor = isEdit ? appointment!.color : Colors.blue;
+    Color selectedColor = isEdit ? appointment!.color : _colorCollection[Random().nextInt(_colorCollection.length)];
     DateTime startTime = isEdit ? appointment!.startTime : selectedDate ?? DateTime.now();
-    DateTime endTime = isEdit ? appointment!.endTime : startTime.add(Duration(hours: 1));
+    DateTime endTime = isEdit ? appointment!.endTime : (selectedDate ?? DateTime.now()).add(Duration(hours: 1));
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        title: Text(isEdit ? 'Chỉnh sửa cuộc hẹn' : 'Thêm cuộc hẹn', textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700), ),
+        title: Text(isEdit ? 'Chỉnh sửa lịch môn học' : 'Thêm lịch môn học', textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700), ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -254,23 +240,33 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
             onPressed: () {
               if (subjectController.text.isEmpty) return;
 
-              setState(() {
-                if (isEdit) {
-                  appointment!.subject = subjectController.text;
-                  appointment.startTime = startTime;
-                  appointment.endTime = endTime;
-                } else {
-                  _dataSource.appointments!.add(
-                    Appointment(
-                      startTime: startTime,
-                      endTime: endTime,
-                      subject: subjectController.text,
-                      color: selectedColor,
-                    ),
+              if (isEdit && appointment != null) {
+                String appointmentId = appointment.id.toString();
+                // Check if it's a subject (no notes field or notes is not 'deadline')
+                if (appointment.notes == null || appointment.notes != 'deadline') {
+                  // Update subject in Firebase
+                  SubjectModel updatedSubject = SubjectModel(
+                    id: appointmentId,
+                    day: DateTime(startTime.year, startTime.month, startTime.day),
+                    timeStart: startTime,
+                    timeEnd: endTime,
+                    subject: subjectController.text,
+                    subjectColor: selectedColor,
                   );
+                  _subjectService.updateSubject(updatedSubject);
                 }
-                _dataSource.notifyListeners(CalendarDataSourceAction.reset, _dataSource.appointments!);
-              });
+              } else {
+                // Add new subject to Firebase
+                SubjectModel newSubject = SubjectModel(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  day: DateTime(startTime.year, startTime.month, startTime.day),
+                  timeStart: startTime,
+                  timeEnd: endTime,
+                  subject: subjectController.text,
+                  subjectColor: selectedColor,
+                );
+                _subjectService.addSubject(newSubject);
+              }
               Navigator.pop(context);
             },
             child: Text(isEdit ? 'Lưu' : 'Thêm'),
@@ -284,9 +280,8 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        //backgroundColor: Colors.white,
         title: Text('Xác nhận xóa', textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),),
-        content: Text('Bạn có chắc muốn xóa cuộc hẹn "${appointment.subject}" không?'),
+        content: Text('Bạn có chắc muốn xóa lịch môn học "${appointment.subject}" không?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -294,10 +289,15 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
           ),
           TextButton(
             onPressed: () {
-              setState(() {
-                _dataSource.appointments!.remove(appointment);
-                _dataSource.notifyListeners(CalendarDataSourceAction.remove, [appointment]);
-              });
+              String appointmentId = appointment.id.toString();
+              
+              // Check if it's a deadline or subject
+              if (appointment.notes == 'deadline') {
+                _deadlineService.deleteDeadline(appointmentId);
+              } else {
+                _subjectService.deleteSubject(appointmentId);
+              }
+              
               Navigator.pop(context);
             },
             child: Text('Xóa', style: TextStyle(color: Colors.red)),
@@ -307,87 +307,22 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
     );
   }
 
-  void _getSubjectCollection() {
-    _subjectCollection.add('đói');
-    _subjectCollection.add('Plan Execution');
-    _subjectCollection.add('Project Plan');
-    _subjectCollection.add('Consulting');
-    _subjectCollection.add('Support');
-    _subjectCollection.add('Development Meeting');
-    _subjectCollection.add('Scrum');
-    _subjectCollection.add('Project Completion');
-    _subjectCollection.add('Release updates');
-    _subjectCollection.add('Performance Check');
-  }
-
-  void _getStartTimeCollection() {
-    var currentDateTime = DateTime.now();
-
-    _startTimeCollection.add(DateTime(currentDateTime.year,
-        currentDateTime.month, currentDateTime.day, 9, 0, 0));
-    _startTimeCollection.add(DateTime(currentDateTime.year,
-        currentDateTime.month, currentDateTime.day, 10, 0, 0));
-    _startTimeCollection.add(DateTime(currentDateTime.year,
-        currentDateTime.month, currentDateTime.day, 11, 0, 0));
-    _startTimeCollection.add(DateTime(currentDateTime.year,
-        currentDateTime.month, currentDateTime.day, 12, 0, 0));
-    _startTimeCollection.add(DateTime(currentDateTime.year,
-        currentDateTime.month, currentDateTime.day, 14, 0, 0));
-    _startTimeCollection.add(DateTime(currentDateTime.year,
-        currentDateTime.month, currentDateTime.day, 15, 0, 0));
-    _startTimeCollection.add(DateTime(currentDateTime.year,
-        currentDateTime.month, currentDateTime.day, 16, 0, 0));
-    _startTimeCollection.add(DateTime(currentDateTime.year,
-        currentDateTime.month, currentDateTime.day, 17, 0, 0));
-    _startTimeCollection.add(DateTime(currentDateTime.year,
-        currentDateTime.month, currentDateTime.day, 18, 0, 0));
-  }
-
-  void _getEndTimeCollection() {
-    var currentDateTime = DateTime.now();
-    _endTimeCollection.add(DateTime(currentDateTime.year,
-        currentDateTime.month, currentDateTime.day, 10, 0, 0));
-    _endTimeCollection.add(DateTime(currentDateTime.year,
-        currentDateTime.month, currentDateTime.day, 11, 0, 0));
-    _endTimeCollection.add(DateTime(currentDateTime.year,
-        currentDateTime.month, currentDateTime.day, 12, 0, 0));
-    _endTimeCollection.add(DateTime(currentDateTime.year,
-        currentDateTime.month, currentDateTime.day, 13, 0, 0));
-    _endTimeCollection.add(DateTime(currentDateTime.year,
-        currentDateTime.month, currentDateTime.day, 15, 0, 0));
-    _endTimeCollection.add(DateTime(currentDateTime.year,
-        currentDateTime.month, currentDateTime.day, 16, 0, 0));
-    _endTimeCollection.add(DateTime(currentDateTime.year,
-        currentDateTime.month, currentDateTime.day, 17, 0, 0));
-    _endTimeCollection.add(DateTime(currentDateTime.year,
-        currentDateTime.month, currentDateTime.day, 18, 0, 0));
-    _endTimeCollection.add(DateTime(currentDateTime.year,
-        currentDateTime.month, currentDateTime.day, 19, 0, 0));
-  }
-
-  void _getColorCollection() {
-    _colorCollection.add(const Color(0xff92A3FD));
-    _colorCollection.add(const Color(0xff9DCEFF));
-    _colorCollection.add(const Color(0xffC58BF2));
-    _colorCollection.add(const Color(0xffEEA4CE));
-    _colorCollection.add(const Color(0xff0da3a3));
-    _colorCollection.add(const Color(0xFF01A1EF));
-    _colorCollection.add(const Color(0xFF3D4FB5));
-    _colorCollection.add(const Color(0xFFE47C73));
-    _colorCollection.add(const Color(0xFF636363));
-    _colorCollection.add(const Color(0xFF0A8043));
-  }
-
-  void _showDeadlineDialog() {
-    TextEditingController subjectController = TextEditingController();
-    TextEditingController deadlineController = TextEditingController();
-    DateTime selectedDate = DateTime.now();
+  void _showDeadlineEditDialog(Appointment appointment) {
+    // Extract subject and deadline name from combined subject field
+    List<String> parts = appointment.subject.split(' - ');
+    String subject = parts[0];
+    String deadlineName = parts.length > 1 ? parts[1] : '';
+    
+    TextEditingController subjectController = TextEditingController(text: subject);
+    TextEditingController deadlineController = TextEditingController(text: deadlineName);
+    DateTime selectedDate = appointment.startTime;
+    Color selectedColor = appointment.color;
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        title: Text('Thêm Deadline cho môn học', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),),
+        title: Text('Chỉnh sửa Deadline', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -396,7 +331,6 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
               decoration: InputDecoration(
                 labelText: 'Tên môn học',
                 hintText: "Nhập tên môn học"
-                //border: OutlineInputBorder(
               ),
             ),
             SizedBox(height: 16),
@@ -405,7 +339,6 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
               decoration: InputDecoration(
                 labelText: 'Tên deadline',
                 hintText: 'Nhập tên deadline'
-                //border: OutlineInputBorder(),
               ),
             ),
             SizedBox(height: 16),
@@ -418,10 +351,18 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
                   lastDate: DateTime(2100),
                 );
                 if (pickedDate != null) {
-                  selectedDate = pickedDate;
+                  setState(() {
+                    selectedDate = DateTime(
+                      pickedDate.year,
+                      pickedDate.month,
+                      pickedDate.day,
+                      selectedDate.hour,
+                      selectedDate.minute
+                    );
+                  });
                 }
               },
-              child: Text('Chọn ngày'),
+              child: Text('Chọn ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),
             ),
             SizedBox(height: 8),
             ElevatedButton(
@@ -431,13 +372,15 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
                   initialTime: TimeOfDay.fromDateTime(selectedDate),
                 );
                 if (pickedTime != null) {
-                  selectedDate = DateTime(
-                    selectedDate.year,
-                    selectedDate.month,
-                    selectedDate.day,
-                    pickedTime.hour,
-                    pickedTime.minute,
-                  );
+                  setState(() {
+                    selectedDate = DateTime(
+                      selectedDate.year,
+                      selectedDate.month,
+                      selectedDate.day,
+                      pickedTime.hour,
+                      pickedTime.minute,
+                    );
+                  });
                 }
               },
               child: Text('Chọn giờ: ${TimeOfDay.fromDateTime(selectedDate).format(context)}'),
@@ -458,17 +401,128 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
                 return;
               }
 
-              setState(() {
-                // _dataSource.appointments!.add(
-                //   Appointment(
-                //     startTime: selectedDate,
-                //     endTime: selectedDate.add(Duration(hours: 1)),
-                //     subject: '${subjectController.text} - ${deadlineController.text}',
-                //     color: _colorCollection[Random().nextInt(_colorCollection.length)],
-                //   ),
-                // );
-                // _dataSource.notifyListeners(CalendarDataSourceAction.reset, _dataSource.appointments!);
-              });
+              // Update deadline in Firebase
+              DeadlineModel updatedDeadline = DeadlineModel(
+                id: appointment.id.toString(),
+                day: DateTime(selectedDate.year, selectedDate.month, selectedDate.day),
+                timeStart: selectedDate,
+                timeEnd: selectedDate.add(Duration(hours: 1)),
+                subject: subjectController.text,
+                deadlineName: deadlineController.text,
+                deadlineColor: selectedColor,
+              );
+              
+              _deadlineService.updateDeadline(updatedDeadline);
+              Navigator.pop(context);
+            },
+            child: Text('Lưu'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeadlineDialog() {
+    TextEditingController subjectController = TextEditingController();
+    TextEditingController deadlineController = TextEditingController();
+    DateTime selectedDate = DateTime.now();
+    Color selectedColor = _colorCollection[Random().nextInt(_colorCollection.length)];
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        title: Text('Thêm Deadline cho môn học', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: subjectController,
+              decoration: InputDecoration(
+                labelText: 'Tên môn học',
+                hintText: "Nhập tên môn học"
+              ),
+            ),
+            SizedBox(height: 16),
+            TextField(
+              controller: deadlineController,
+              decoration: InputDecoration(
+                labelText: 'Tên deadline',
+                hintText: 'Nhập tên deadline'
+              ),
+            ),
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () async {
+                DateTime? pickedDate = await showDatePicker(
+                  context: context,
+                  initialDate: selectedDate,
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime(2100),
+                );
+                if (pickedDate != null) {
+                  setState(() {
+                    selectedDate = DateTime(
+                      pickedDate.year,
+                      pickedDate.month,
+                      pickedDate.day,
+                      selectedDate.hour,
+                      selectedDate.minute
+                    );
+                  });
+                }
+              },
+              child: Text('Chọn ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),
+            ),
+            SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: () async {
+                TimeOfDay? pickedTime = await showTimePicker(
+                  context: context,
+                  initialTime: TimeOfDay.fromDateTime(selectedDate),
+                );
+                if (pickedTime != null) {
+                  setState(() {
+                    selectedDate = DateTime(
+                      selectedDate.year,
+                      selectedDate.month,
+                      selectedDate.day,
+                      pickedTime.hour,
+                      pickedTime.minute,
+                    );
+                  });
+                }
+              },
+              child: Text('Chọn giờ: ${TimeOfDay.fromDateTime(selectedDate).format(context)}'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (subjectController.text.isEmpty || deadlineController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Vui lòng điền đầy đủ thông tin')),
+                );
+                return;
+              }
+
+              // Create deadline in Firebase
+              DeadlineModel newDeadline = DeadlineModel(
+                id: DateTime.now().millisecondsSinceEpoch.toString(),
+                day: DateTime(selectedDate.year, selectedDate.month, selectedDate.day),
+                timeStart: selectedDate,
+                timeEnd: selectedDate.add(Duration(hours: 1)),
+                subject: subjectController.text,
+                deadlineName: deadlineController.text,
+                deadlineColor: selectedColor,
+              );
+              
+              _deadlineService.addDeadline(newDeadline);
               Navigator.pop(context);
             },
             child: Text('Thêm'),
@@ -476,6 +530,51 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
         ],
       ),
     );
+  }
+
+  void _showAddMenu() {
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(15.0)),
+      ),
+      builder: (context) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            ListTile(
+              leading: Icon(Icons.school, color: Theme.of(context).primaryColor),
+              title: Text('Thêm lịch môn học'),
+              onTap: () {
+                Navigator.pop(context);
+                _showAppointmentDialog(isEdit: false, selectedDate: DateTime.now());
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.assignment_late, color: Theme.of(context).primaryColor),
+              title: Text('Thêm deadline cho môn học'),
+              onTap: () {
+                Navigator.pop(context);
+                _showDeadlineDialog();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _getColorCollection() {
+    _colorCollection.add(const Color(0xff92A3FD));
+    _colorCollection.add(const Color(0xff9DCEFF));
+    _colorCollection.add(const Color(0xffC58BF2));
+    _colorCollection.add(const Color(0xffEEA4CE));
+    _colorCollection.add(const Color(0xff0da3a3));
+    _colorCollection.add(const Color(0xFF01A1EF));
+    _colorCollection.add(const Color(0xFF3D4FB5));
+    _colorCollection.add(const Color(0xFFE47C73));
+    _colorCollection.add(const Color(0xFF636363));
+    _colorCollection.add(const Color(0xFF0A8043));
   }
 }
 
@@ -489,12 +588,10 @@ class _DataSource extends CalendarDataSource {
     notifyListeners(CalendarDataSourceAction.add, [appointment]);
   }
 
-
   void removeAppointment(Appointment appointment) {
     appointments!.remove(appointment);
     notifyListeners(CalendarDataSourceAction.remove, [appointment]);
   }
-
 
   void updateAppointment(Appointment oldAppointment, Appointment newAppointment) {
     final int index = appointments!.indexOf(oldAppointment);
