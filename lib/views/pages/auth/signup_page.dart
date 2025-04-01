@@ -1,6 +1,5 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 
+import 'package:flutter/material.dart';
 import '../../../components/colors.dart';
 import '../../../database/services/Auth_Service.dart';
 import '../../widgets/app_bar.dart';
@@ -17,13 +16,37 @@ class SignupPage extends StatefulWidget{
 
 class _SignupPageState extends State<SignupPage> {
   final TextEditingController fullName = TextEditingController();
-
   final TextEditingController email = TextEditingController();
-
   final TextEditingController password = TextEditingController();
-
   final AuthService _authService = AuthService();
+  bool _isPasswordVisible = false;
   bool isLoading = false;
+
+  bool isValidEmail(String email) {
+    return RegExp(
+        r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$')
+        .hasMatch(email);
+  }
+
+  FormFieldValidator<String> validateEmail = (value) {
+    if (value == null || value.isEmpty) {
+      return "Please enter your email";
+    } else if (!RegExp(
+        r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$')
+        .hasMatch(value)) {
+      return "Please enter a valid email";
+    }
+    return null;
+  };
+
+  FormFieldValidator<String> validatePassword = (value) {
+    if (value == null || value.isEmpty) {
+      return "Please enter your password";
+    } else if (value.length < 6) {
+      return "Password must be at least 6 characters";
+    }
+    return null;
+  };
 
   void _signUp() async {
     setState(() {
@@ -154,25 +177,61 @@ class _SignupPageState extends State<SignupPage> {
   Widget fullNameField(BuildContext context) {
     return TextField(
       controller: fullName,
-      decoration: const InputDecoration(hintText: "Tên tài khoản")
-          .applyDefaults(Theme.of(context).inputDecorationTheme),
+      decoration: const InputDecoration(
+        hintText: "nhập tên tài khoản",
+        labelText: "Tên tài khoản",
+        prefixIcon: const Icon(Icons.person, color: Colors.grey),
+        filled: true,
+        errorStyle: const TextStyle(color: Colors.redAccent),
+        //contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        fillColor: Colors.white,
+      ).applyDefaults(Theme
+          .of(context)
+          .inputDecorationTheme),
     );
   }
 
   Widget emailField(BuildContext context) {
-    return TextField(
+    return TextFormField(
       controller: email,
-      decoration: const InputDecoration(hintText: "Email")
-          .applyDefaults(Theme.of(context).inputDecorationTheme),
+      keyboardType: TextInputType.emailAddress,
+      decoration: const InputDecoration(
+        hintText: "nhập Email",
+        labelText: "Email",
+        prefixIcon: const Icon(Icons.email_outlined, color: Colors.grey),
+        filled: true,
+        errorStyle: const TextStyle(color: Colors.redAccent),
+        //contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        fillColor: Colors.white,
+      ),
+      validator: validateEmail,
     );
   }
 
   Widget passwordField(BuildContext context) {
-    return TextField(
+    return TextFormField(
       controller: password,
-      decoration: const InputDecoration(hintText: "Mật khẩu")
-          .applyDefaults(Theme.of(context).inputDecorationTheme),
+      obscureText: !_isPasswordVisible,
+      decoration: InputDecoration(
+        hintText: " Nhập mật khẩu",
+        labelText: 'Mật khẩu',
+        prefixIcon: const Icon(Icons.lock_outline, color: Colors.grey),
+        fillColor: Colors.white,
+        suffixIcon: IconButton(
+          icon: Icon(
+            _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+            color: Colors.grey,
+          ),
+          onPressed: () {
+            setState(() {
+              _isPasswordVisible = !_isPasswordVisible;
+            });
+          },
+        ),
+      ),
+      validator: validatePassword,
     );
+
   }
 
   Widget signInText(BuildContext context) {

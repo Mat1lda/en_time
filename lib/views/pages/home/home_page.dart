@@ -102,8 +102,11 @@ class HomeView extends StatelessWidget{
                                 width: 120,
                                 height: 35,
                                 child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.white
+                                  ),
                                   onPressed: () {},
-                                  child: Text("Xem"),
+                                  child: Text("Xem", style: TextStyle(color: AppColors.primaryColor1),),
                                 ),
                               ),
                             ],

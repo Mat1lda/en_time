@@ -33,20 +33,26 @@ class _WelcomeViewState extends State<CompletedTaskView> {
                 //fit: BoxFit.cover,
               ),
               SizedBox(height: media.width * 0.1),
-              Text(
-                "Chúc mừng bạn đã xong công việc",
-                style: TextStyle(
-                  color: AppColors.black,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
+              Align(
+                alignment: Alignment.center,
+                child: Text(
+                  "Chúc mừng bạn đã xong công việc",
+                  style: TextStyle(
+                    color: AppColors.black,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  "Thời hạn không phải là tùy chọn, chúng là cam kết. Thành công đến với những ai tôn trọng chúng.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.gray, fontSize: 12),
+                child: Align(
+                  alignment: Alignment.center,
+                  child: Text(
+                    "Thời hạn không phải là tùy chọn, chúng là cam kết. Thành công đến với những ai tôn trọng chúng.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.gray, fontSize: 12),
+                  ),
                 ),
               ),
               SizedBox(height: 10),

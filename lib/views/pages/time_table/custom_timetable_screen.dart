@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:en_time/views/widgets/app_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -39,8 +40,12 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       home: Scaffold(
+        appBar: BasicAppbar(
+          backgroundColor: Colors.white,
+          hideBack: true,
+          title: Text('Lịch học', style: TextStyle(fontWeight: FontWeight.w700,),),
+        ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
             _showDeadlineDialog();
@@ -198,7 +203,7 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
                   });
                 }
               },
-              child: Text('Chọn ngày: ${startTime.toLocal()}'.split(' ')[0]),
+              child: Text('Chọn ngày'),
             ),
             Row(
               children: [
@@ -381,7 +386,8 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Thêm Deadline cho môn học'),
+        backgroundColor: Colors.white,
+        title: Text('Thêm Deadline cho môn học', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -389,7 +395,8 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
               controller: subjectController,
               decoration: InputDecoration(
                 labelText: 'Tên môn học',
-                //border: OutlineInputBorder(),
+                hintText: "Nhập tên môn học"
+                //border: OutlineInputBorder(
               ),
             ),
             SizedBox(height: 16),
@@ -397,6 +404,7 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
               controller: deadlineController,
               decoration: InputDecoration(
                 labelText: 'Tên deadline',
+                hintText: 'Nhập tên deadline'
                 //border: OutlineInputBorder(),
               ),
             ),
@@ -413,7 +421,7 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
                   selectedDate = pickedDate;
                 }
               },
-              child: Text('Chọn ngày: ${selectedDate.toLocal()}'.split(' ')[0]),
+              child: Text('Chọn ngày'),
             ),
             SizedBox(height: 8),
             ElevatedButton(

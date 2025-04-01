@@ -22,20 +22,24 @@ class _SplashPageState extends State<SplashPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary,
-      body: Padding(
-        padding: EdgeInsets.symmetric(vertical: 80),
-        child: Stack(
-          children: [
-            Align(
-              alignment: Alignment.centerRight,
-              child: Image.asset("assets/images/Group 18.png"),
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Image.asset("assets/images/enTime.png"),
-            )
-          ],
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: AppColors.primaryG)
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 80),
+          child: Stack(
+            children: [
+              Align(
+                alignment: Alignment.centerRight,
+                child: Image.asset("assets/images/Group 18.png"),
+              ),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Image.asset("assets/images/enTime.png"),
+              )
+            ],
+          ),
         ),
       ),
     );
