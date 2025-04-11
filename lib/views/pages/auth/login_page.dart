@@ -1,6 +1,10 @@
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:en_time/firebase_api.dart';
 import 'package:en_time/views/pages/auth/signup_page.dart';
 import 'package:en_time/views/pages/main_tab/tab_view.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -69,6 +73,22 @@ class _LoginPageState extends State<LoginPage> {
       // ScaffoldMessenger.of(context).showSnackBar(
       //   const SnackBar(content: Text("Đăng nhập thành công!")),
       // );
+      // 👇 Thêm phần này để lấy và lưu token
+      final token = await FirebaseMessaging.instance.getToken();
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+
+      if (token != null && userId != null) {
+        await FirebaseFirestore.instance.collection('users').doc(userId).get().then((snapshot) {
+          List<String> existingTokens = List<String>.from(snapshot.data()?['fcmTokens'] ?? []);
+          if (!existingTokens.contains(token)) {
+            existingTokens.add(token);
+            FirebaseFirestore.instance.collection('users').doc(userId).update({
+              'fcmTokens': existingTokens,
+            });
+          }
+        });
+      }
+
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => MainTabView()),

@@ -1,8 +1,8 @@
 import 'package:calendar_agenda/calendar_agenda.dart';
 import 'package:flutter/material.dart';
 import '../../../components/colors.dart';
-import '../../../components/common_time.dart';
-import '../../widgets/round_button.dart';
+import '../../../database/models/task_model.dart';
+import '../../../database/services/task_services.dart';
 import 'add_schedule_view.dart';
 import 'completed_task_view.dart';
 
@@ -14,56 +14,15 @@ class TaskScheduleView extends StatefulWidget {
 }
 
 class _TaskScheduleViewState extends State<TaskScheduleView> {
-  CalendarAgendaController _calendarAgendaControllerAppBar =
-      CalendarAgendaController();
-  late DateTime _selectedDateAppBBar; //ngay hien tai
-
-  List eventArr = [
-    {
-      "name": "tán gái 1 111111111111111111111111111111111",
-      "start_time": "15/03/2025 07:30 AM",
-    },
-    {"name": "tán gái 2", "start_time": "15/03/2025 09:00 AM"},
-    {"name": "tán gái 3", "start_time": "15/03/2025 03:00 PM"},
-    {"name": "tán gái 4", "start_time": "16/03/2025 07:30 AM"},
-    {"name": "tán gái 5", "start_time": "16/03/2025 09:00 AM"},
-    {"name": "tán gái 6", "start_time": "16/03/2025 03:00 PM"},
-    {"name": "tán gái 7", "start_time": "17/03/2025 07:30 AM"},
-    {"name": "tán gái 8", "start_time": "17/03/2025 09:00 AM"},
-    {"name": "tán gái 9", "start_time": "17/03/2025 03:00 PM"},
-  ];
-
-  List selectDayEventArr = [];
+  CalendarAgendaController _calendarAgendaControllerAppBar = CalendarAgendaController();
+  late DateTime _selectedDateAppBBar;
+  final TaskService _taskService = TaskService();
+  List<TaskModel> _tasks = [];
 
   @override
   void initState() {
     super.initState();
     _selectedDateAppBBar = DateTime.now();
-    setDayEventList();
-  }
-
-  void setDayEventList() {
-    var date = dateToStartDate(_selectedDateAppBBar);
-    selectDayEventArr =
-        eventArr
-            .map((wObj) {
-              return {
-                "name": wObj["name"],
-                "start_time": wObj["start_time"],
-                "date": stringToDate(
-                  wObj["start_time"].toString(),
-                  formatStr: "dd/MM/yyyy hh:mm aa",
-                ),
-              };
-            })
-            .where((wObj) {
-              return dateToStartDate(wObj["date"] as DateTime) == date;
-            })
-            .toList();
-
-    if (mounted) {
-      setState(() {});
-    }
   }
 
   @override
@@ -91,7 +50,7 @@ class _TaskScheduleViewState extends State<TaskScheduleView> {
               "assets/images/black_btn.png",
               width: 15,
               height: 15,
-              fit: BoxFit.contain, //anh kh bi thay doi kich thuoc
+              fit: BoxFit.contain,
             ),
           ),
         ),
@@ -105,7 +64,14 @@ class _TaskScheduleViewState extends State<TaskScheduleView> {
         ),
         actions: [
           InkWell(
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CompletedTaskView(),
+                ),
+              );
+            },
             child: Container(
               margin: const EdgeInsets.all(8),
               height: 40,
@@ -155,7 +121,6 @@ class _TaskScheduleViewState extends State<TaskScheduleView> {
             dayBGColor: Colors.grey.withOpacity(0.15),
             titleSpaceBetween: 15,
             backgroundColor: Colors.transparent,
-            // fullCalendar: false,
             fullCalendarScroll: FullCalendarScroll.horizontal,
             fullCalendarDay: WeekDay.short,
             selectedDateColor: Colors.white,
@@ -164,12 +129,11 @@ class _TaskScheduleViewState extends State<TaskScheduleView> {
             initialDate: DateTime.now(),
             calendarEventColor: AppColors.primaryColor2,
             firstDate: DateTime.now().subtract(const Duration(days: 140)),
-            //pham vi ngay xem duoc
             lastDate: DateTime.now().add(const Duration(days: 60)),
-
             onDateSelected: (date) {
-              _selectedDateAppBBar = date;
-              setDayEventList();
+              setState(() {
+                _selectedDateAppBBar = date;
+              });
             },
             selectedDayLogo: Container(
               width: double.maxFinite,
@@ -185,259 +149,229 @@ class _TaskScheduleViewState extends State<TaskScheduleView> {
             ),
           ),
           Expanded(
-            //hien thi danh sach gio
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: media.width * 1.5,
-                child: ListView.separated(
-                  //hien thi danh sach gio
-                  shrinkWrap: true,
-                  itemBuilder: (context, index) {
-                    var timelineDataWidth = (media.width * 1.5) - (80 + 40);
-                    var availWidth = (media.width * 1.2) - (80 + 40);
-                    var slotArr =
-                        selectDayEventArr.where((wObj) {
-                          return (wObj["date"] as DateTime).hour == index;
-                        }).toList();
+            child: StreamBuilder<List<TaskModel>>(
+              stream: _taskService.getTasksByDay(_selectedDateAppBBar),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(child: Text('Đã xảy ra lỗi: ${snapshot.error}'));
+                }
 
-                    return Container(
-                      //hien thi man hinh theo gio
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      height: 40,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            width: 80,
-                            child: Text(getTime(index * 60),
-                              style: TextStyle(
-                                color: AppColors.black,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                          if (slotArr.isNotEmpty)
-                            Expanded(
-                              child: Stack(
-                                alignment: Alignment.centerLeft,
-                                children:
-                                    slotArr.map((sObj) {
-                                      var min = (sObj["date"] as DateTime).minute;
-                                      //(0 to 2)
-                                      var pos = (min / 60) * 2 - 1; //vi tri de thanh cong viec
-                                      return Align(
-                                        alignment: Alignment(pos, 0),
-                                        child: InkWell(
-                                          onTap: () {
-                                            showDialog(
-                                              context: context,
-                                              builder: (context) {
-                                                return AlertDialog(
-                                                  backgroundColor: Colors.transparent,
-                                                  contentPadding: EdgeInsets.zero,
-                                                  content: Container(
-                                                    padding: const EdgeInsets.symmetric(
-                                                          vertical: 15,
-                                                          horizontal: 20,
-                                                        ),
-                                                    decoration: BoxDecoration(
-                                                      color: AppColors.white,
-                                                      borderRadius: BorderRadius.circular(20),
-                                                    ),
-                                                    child: Column(
-                                                      mainAxisSize: MainAxisSize.min,
-                                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                                      children: [
-                                                        Row(
-                                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                          children: [
-                                                            InkWell(
-                                                              onTap: () {
-                                                                Navigator.pop(context);
-                                                              },
-                                                              child: Container(
-                                                                margin: const EdgeInsets.all(8),
-                                                                height: 40,
-                                                                width: 40,
-                                                                alignment: Alignment.center,
-                                                                decoration: BoxDecoration(
-                                                                  color: AppColors.lightGray,
-                                                                  borderRadius: BorderRadius.circular(10),
-                                                                ),
-                                                                child: Image.asset(
-                                                                  "assets/images/closed_btn.png",
-                                                                  width: 15,
-                                                                  height: 15,
-                                                                  fit: BoxFit.contain,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                            Text(
-                                                              "Công Việc",
-                                                              style: TextStyle(
-                                                                color: AppColors.black,
-                                                                fontSize: 16,
-                                                                fontWeight: FontWeight.w700
-                                                              ),
-                                                            ),
-                                                            InkWell(
-                                                              onTap: () {},
-                                                              child: Container(
-                                                                margin: const EdgeInsets.all(8),
-                                                                height: 40,
-                                                                width: 40,
-                                                                alignment: Alignment.center,
-                                                                decoration: BoxDecoration(
-                                                                  color: AppColors.lightGray,
-                                                                  borderRadius: BorderRadius.circular(10),
-                                                                ),
-                                                                child: Image.asset(
-                                                                  "assets/images/more_btn.png",
-                                                                  width: 15,
-                                                                  height: 15,
-                                                                  fit: BoxFit.contain, //giu nguyen ty le cua anh, kh bi meo
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        const SizedBox(
-                                                          height: 15,
-                                                        ),
-                                                        Text(
-                                                          sObj["name"].toString(),
-                                                          style: TextStyle(
-                                                            color: AppColors.black,
-                                                            fontSize: 14,
-                                                            fontWeight: FontWeight.w700,
-                                                          ),
-                                                        ),
-                                                        const SizedBox(
-                                                          height: 4,
-                                                        ),
-                                                        Row(
-                                                          children: [
-                                                            Image.asset(
-                                                              "assets/images/time_workout.png",
-                                                              height: 20,
-                                                              width: 20,
-                                                            ),
-                                                            const SizedBox(
-                                                              width: 8,
-                                                            ),
-                                                            Text(
-                                                              "${getDayTitle(sObj["start_time"].toString())} | ${getStringDateToOtherFormate(sObj["start_time"].toString(), outFormatStr: "h:mm aa")}",
-                                                              style: TextStyle(
-                                                                color: AppColors.gray,
-                                                                fontSize: 12,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        const SizedBox(
-                                                          height: 15,
-                                                        ),
-                                                        RoundButton(
-                                                          title:
-                                                              "Đánh dấu đã hoàn thành",
-                                                          onPressed: () {
-                                                            Navigator.pushReplacement(
-                                                              context,
-                                                              MaterialPageRoute(
-                                                                builder: (context) => CompletedTaskView(),
-                                                              ),
-                                                            );
-                                                          },
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                );
-                                              },
-                                            );
-                                          },
-                                          child: Container(
-                                            height: 35,
-                                            width: availWidth * 0.5,
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                            ),
-                                            alignment: Alignment.centerLeft,
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                colors: AppColors.secondaryG,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(17.5),
-                                            ),
-                                            child: Text(
-                                              "${sObj["name"].toString()}, ${getStringDateToOtherFormate(sObj["start_time"].toString(), outFormatStr: "h:mm aa")}",
-                                              maxLines: 2,
-                                              style: TextStyle(
-                                                color: AppColors.white,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    }).toList(),
-                              ),
-                            ),
-                        ],
-                      ),
-                    );
-                  },
-                  separatorBuilder: (context, index) {
-                    return Divider(
-                      color: AppColors.gray.withOpacity(0.2),
-                      height: 1,
-                    );
-                  },
-                  itemCount: 24,
-                ),
-              ),
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+
+                final tasks = snapshot.data ?? [];
+                if (tasks.isEmpty) {
+                  return Center(child: Text('Không có công việc nào trong ngày này'));
+                }
+
+                return SingleChildScrollView(
+                  child: Column(
+                    children: tasks.map((task) => _buildTaskItem(task)).toList(),
+                  ),
+                );
+              },
             ),
           ),
         ],
       ),
-      floatingActionButton: InkWell(
-        onTap: () {
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder:
-                  (context) => AddScheduleView(
-                    date: _selectedDateAppBBar,
-                    // onSave: (Map<String, dynamic> newEvent) {
-                    //   setState(() {
-                    //     eventArr.add(newEvent);
-                    //     setDayEventList(); // Cập nhật danh sách sự kiện của ngày đã chọn
-                    //   });
-                    // },
-                  ),
+              builder: (context) => AddScheduleView(date: _selectedDateAppBBar),
             ),
           );
         },
-        child: Container(
-          width: 55,
-          height: 55,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: AppColors.secondaryG),
-            borderRadius: BorderRadius.circular(27.5),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 5,
-                offset: Offset(0, 2),
+        child: Icon(Icons.add),
+        backgroundColor: AppColors.primaryColor1,
+      ),
+    );
+  }
+
+  Widget _buildTaskItem(TaskModel task) {
+    return GestureDetector(
+      onTap: () {
+        //_showEditTaskDialog(task);
+      },
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+        padding: EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 1,
+              offset: Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    task.timeStart,
+                    style: TextStyle(
+                      color: AppColors.primaryColor1,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: 5),
+                  Text(
+                    task.content,
+                    style: TextStyle(
+                      color: AppColors.black,
+                      fontSize: 14,
+                    ),
+                  ),
+                  SizedBox(height: 5),
+                  Text(
+                    task.taskType,
+                    style: TextStyle(
+                      color: AppColors.gray,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          alignment: Alignment.center,
-          child: Icon(Icons.add, size: 20, color: AppColors.white),
+            ),
+            Column(
+              children: [
+                Checkbox(
+                  value: task.isDone,
+                  onChanged: (bool? value) {
+                    _taskService.toggleTaskCompletion(task.id, task.isDone);
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.delete, color: Colors.red),
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: Colors.white,
+                        title: Text('Xác nhận xóa', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),),
+                        content: Text('Bạn có chắc chắn muốn xóa?', textAlign: TextAlign.center,),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text('Hủy'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              _taskService.deleteTask(task.id);
+                              Navigator.pop(context);
+                            },
+                            child: Text('Xóa'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.red,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
-}
+
+//   void _showEditTaskDialog(TaskModel task) {
+//     TextEditingController contentController = TextEditingController(text: task.content);
+//     TextEditingController timeController = TextEditingController(text: task.timeStart);
+//
+//     // Define the list of available task types
+//     final List<String> taskTypes = ['Học tập', 'Công việc', 'Hoạt động cá nhân', 'Khác'];
+//
+//     // Ensure the selected type is in the list, otherwise default to the first item
+//     String selectedTaskType = taskTypes.contains(task.taskType) ? task.taskType : taskTypes[0];
+//
+//     showDialog(
+//       context: context,
+//       builder: (context) => AlertDialog(
+//         backgroundColor: Colors.white,
+//         title: Text('Chỉnh sửa công việc', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),),
+//         content: Column(
+//           mainAxisSize: MainAxisSize.min,
+//           children: [
+//             TextField(
+//               controller: contentController,
+//               decoration: InputDecoration(
+//                 labelText: 'Nội dung công việc',
+//                 hintText: 'Nhập nội dung công việc',
+//               ),
+//             ),
+//             SizedBox(height: 16),
+//             TextField(
+//               controller: timeController,
+//               decoration: InputDecoration(
+//                 labelText: 'Thời gian',
+//                 hintText: 'Nhập thời gian (VD: 08:00)',
+//               ),
+//             ),
+//             SizedBox(height: 16),
+//             DropdownButtonFormField<String>(
+//               value: selectedTaskType,
+//               decoration: InputDecoration(
+//                 labelText: 'Loại công việc',
+//               ),
+//               items: taskTypes.map((String value) {
+//                 return DropdownMenuItem<String>(
+//                   value: value,
+//                   child: Text(value),
+//                 );
+//               }).toList(),
+//               onChanged: (String? newValue) {
+//                 if (newValue != null) {
+//                   selectedTaskType = newValue;
+//                 }
+//               },
+//             ),
+//           ],
+//         ),
+//         actions: [
+//           TextButton(
+//             onPressed: () => Navigator.pop(context),
+//             child: Text('Hủy'),
+//           ),
+//           TextButton(
+//             onPressed: () {
+//               if (contentController.text.isEmpty || timeController.text.isEmpty) {
+//                 ScaffoldMessenger.of(context).showSnackBar(
+//                   SnackBar(content: Text('Vui lòng điền đầy đủ thông tin')),
+//                 );
+//                 return;
+//               }
+//
+//               // Update task in Firebase
+//               TaskModel updatedTask = TaskModel(
+//                 day: task.day,
+//                 id: task.id,
+//                 content: contentController.text,
+//                 timeStart: timeController.text,
+//                 taskType: selectedTaskType,
+//                 isDone: task.isDone,
+//               );
+//
+//               _taskService.updateTask(updatedTask);
+//               Navigator.pop(context);
+//             },
+//             child: Text('Lưu'),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+ }

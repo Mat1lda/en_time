@@ -1,3 +1,4 @@
+import 'package:en_time/views/pages/profile_page/profile_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -106,7 +107,7 @@ class _MainTabViewState extends State<MainTabView> {
                 isActive: selectTab == 3,
                 onTap: () {
                   selectTab = 3;
-                  currentTab = HomeView();
+                  currentTab = ProfilePage();
                   if (mounted) {
                     setState(() {});
                   }

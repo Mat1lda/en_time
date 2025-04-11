@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 
 import '../../../components/colors.dart';
 import '../../../components/common_time.dart';
+
+import '../../../database/models/task_model.dart';
+import '../../../database/services/task_services.dart';
 import '../../widgets/round_button.dart';
 
 
@@ -18,8 +21,9 @@ class AddScheduleView extends StatefulWidget {
 class _AddScheduleViewState extends State<AddScheduleView> {
   DateTime _selectedTime = DateTime.now();
   final TextEditingController _detailController = TextEditingController();
-  bool _isPublic = false;
+  bool _isPersonal = true;
   bool _isExtra = false;
+  final TaskService _taskService = TaskService();
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +91,7 @@ class _AddScheduleViewState extends State<AddScheduleView> {
             ),
             GestureDetector(
               onTap: () {
-                FocusScope.of(context).unfocus(); // Bỏ focus khi nhấn ra ngoài
+                FocusScope.of(context).unfocus();
               },
               child: SizedBox(
                 height: media.width * 0.35,
@@ -127,10 +131,11 @@ class _AddScheduleViewState extends State<AddScheduleView> {
             Row(
               children: [
                 Checkbox(
-                  value: _isPublic,
+                  value: _isPersonal,
                   onChanged: (value) {
                     setState(() {
-                      _isPublic = value!;
+                      _isPersonal = value!;
+                      if (_isPersonal) _isExtra = false;
                     });
                   },
                 ),
@@ -144,6 +149,7 @@ class _AddScheduleViewState extends State<AddScheduleView> {
                   onChanged: (value) {
                     setState(() {
                       _isExtra = value!;
+                      if (_isExtra) _isPersonal = false;
                     });
                   },
                 ),
@@ -153,15 +159,34 @@ class _AddScheduleViewState extends State<AddScheduleView> {
             Spacer(),
             RoundButton(
               title: "Lưu",
-              onPressed: () {
-                Navigator.pop(context);
-                // Map<String, dynamic> newSchedule = {
-                //   "name": _detailController.text,
-                //   //"date": widget.date,
-                //   "start_time": dateToString(_selectedTime, formatStr: "dd/MM/yyyy hh:mm a"),
-                //   //"isPublic": _isPublic,
-                //   //"isExtra": _isExtra,
-                //widget.onSave(newSchedule);
+              onPressed: () async {
+                if (_detailController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Vui lòng nhập nội dung công việc')),
+                  );
+                  return;
+                }
+
+                final taskType = _isPersonal ? "Hoạt động cá nhân" : "Hoạt động ngoại khóa";
+                
+                final newTask = TaskModel(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  day: widget.date,
+                  timeStart: dateToString(_selectedTime, formatStr: "hh:mm a"),
+                  content: _detailController.text,
+                  isDone: false,
+                  taskType: taskType,
+                  userId: _taskService.currentUserId,
+                );
+
+                try {
+                  await _taskService.addTask(newTask);
+                  Navigator.pop(context);
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Lỗi: Không thể thêm công việc')),
+                  );
+                }
               },
             ),
             const SizedBox(height: 20),

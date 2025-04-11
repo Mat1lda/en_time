@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:en_time/components/colors.dart';
 import 'package:en_time/views/widgets/app_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -30,79 +31,93 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
     super.initState();
   }
   void _loadAppointments() {
+    print("Loading appointments...");
     _subjectService.getAllSubjects().listen((subjects) {
-      final subjectAppointments = subjects.map((subject) => subject.toAppointment()).toList();
-      _deadlineService.getAllDeadlines().listen((deadlines) {
-        final deadlineAppointments = deadlines.map((deadline) => deadline.toAppointment()).toList();
-        final allAppointments = [...subjectAppointments, ...deadlineAppointments];
-        setState(() {
-          _dataSource.appointments!.clear();
-          _dataSource.appointments!.addAll(allAppointments);
-          _dataSource.notifyListeners(CalendarDataSourceAction.reset, _dataSource.appointments!);
-        });
+      print("Loaded ${subjects.length} subjects");
+      final subjectAppointments = subjects.map((subject) {
+        try {
+          return subject.toAppointment();
+        } catch (e) {
+          print("Error converting subject to appointment: $e");
+          print("Subject data: ${subject.toMap()}");
+          return null;
+        }
+      }).where((appointment) => appointment != null).cast<Appointment>().toList();
+      
+      // Only use subject appointments, ignore deadlines
+      print("Total appointments: ${subjectAppointments.length}");
+      
+      setState(() {
+        _dataSource.appointments!.clear();
+        _dataSource.appointments!.addAll(subjectAppointments);
+        _dataSource.notifyListeners(CalendarDataSourceAction.reset, _dataSource.appointments!);
       });
+    }, onError: (error) {
+      print("Error loading subjects: $error");
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        appBar: BasicAppbar(
-          backgroundColor: Colors.white,
-          hideBack: true,
-          title: Text('Lịch học', style: TextStyle(fontWeight: FontWeight.w700,),),
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            _showAddMenu();
-          },
-          child: Icon(Icons.add),
-        ),
-        body: SafeArea(
-          child: SfCalendar(
-            dataSource: _dataSource,
-            view: _selectedView,
-            allowedViews: const [
-              CalendarView.day,
-              CalendarView.week,
-              CalendarView.workWeek,
-              CalendarView.month,
-              CalendarView.timelineDay,
-              CalendarView.timelineWeek,
-              CalendarView.timelineWorkWeek,
-              CalendarView.timelineMonth,
-              CalendarView.schedule
-            ],
-            minDate: DateTime(DateTime.now().year, 1, 1),
-            maxDate: DateTime(DateTime.now().year + 1, 12, 31),
-            headerHeight: 50,
-            viewHeaderHeight: 60,
-            firstDayOfWeek: 1,
-            timeSlotViewSettings: TimeSlotViewSettings(
-              startHour: 7,
-              endHour: 21,
-              timeFormat: 'HH:mm',
-              nonWorkingDays: <int>[DateTime.saturday, DateTime.sunday],
-              timeIntervalHeight: 60,
-              timeTextStyle: TextStyle(
-                fontWeight: FontWeight.w500, 
-                fontSize: 12,
-                color: Colors.black.withOpacity(0.7)
+    return SafeArea(
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          appBar: BasicAppbar(
+            backgroundColor: Colors.white,
+            hideBack: true,
+            title: Text('Lịch học', style: TextStyle(fontWeight: FontWeight.w700,),),
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              _showAddMenu();
+            },
+            child: Icon(Icons.add),
+          ),
+          body: SafeArea(
+            child: SfCalendar(
+              dataSource: _dataSource,
+              view: _selectedView,
+              allowedViews: const [
+                CalendarView.day,
+                CalendarView.week,
+                CalendarView.workWeek,
+                CalendarView.month,
+                CalendarView.timelineDay,
+                CalendarView.timelineWeek,
+                CalendarView.timelineWorkWeek,
+                CalendarView.timelineMonth,
+                CalendarView.schedule
+              ],
+              minDate: DateTime(DateTime.now().year, 1, 1),
+              maxDate: DateTime(DateTime.now().year + 1, 12, 31),
+              headerHeight: 50,
+              viewHeaderHeight: 60,
+              firstDayOfWeek: 1,
+              timeSlotViewSettings: TimeSlotViewSettings(
+                startHour: 7,
+                endHour: 21,
+                timeFormat: 'HH:mm',
+                nonWorkingDays: <int>[DateTime.saturday, DateTime.sunday],
+                timeIntervalHeight: 60,
+                timeTextStyle: TextStyle(
+                  fontWeight: FontWeight.w500, 
+                  fontSize: 12,
+                  color: Colors.black.withOpacity(0.7)
+                ),
+                dayFormat: 'EEE',
               ),
-              dayFormat: 'EEE',
+              monthViewSettings: MonthViewSettings(
+                appointmentDisplayMode: MonthAppointmentDisplayMode.appointment,
+                showAgenda: true,
+              ),
+              todayHighlightColor: Theme.of(context).primaryColor,
+              cellBorderColor: Colors.grey.withOpacity(0.2),
+              onTap: _onCalendarTapped,
+              onLongPress: _onCalendarLongPressed,
+              specialRegions: _specialTimeRegion,
+              onViewChanged: viewChanged,
             ),
-            monthViewSettings: MonthViewSettings(
-              appointmentDisplayMode: MonthAppointmentDisplayMode.appointment,
-              showAgenda: true,
-            ),
-            todayHighlightColor: Theme.of(context).primaryColor,
-            cellBorderColor: Colors.grey.withOpacity(0.2),
-            onTap: _onCalendarTapped,
-            onLongPress: _onCalendarLongPressed,
-            specialRegions: _specialTimeRegion,
-            onViewChanged: viewChanged,
           ),
         ),
       ),
@@ -253,7 +268,10 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
                     subject: subjectController.text,
                     subjectColor: selectedColor,
                   );
-                  _subjectService.updateSubject(updatedSubject);
+                  _subjectService.updateSubject(updatedSubject).then((_) {
+                    // Reload appointments after update
+                    _loadAppointments();
+                  });
                 }
               } else {
                 // Add new subject to Firebase
@@ -265,7 +283,10 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
                   subject: subjectController.text,
                   subjectColor: selectedColor,
                 );
-                _subjectService.addSubject(newSubject);
+                _subjectService.addSubject(newSubject).then((_) {
+                  // Reload appointments after add
+                  _loadAppointments();
+                });
               }
               Navigator.pop(context);
             },
@@ -280,6 +301,7 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
         title: Text('Xác nhận xóa', textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),),
         content: Text('Bạn có chắc muốn xóa lịch môn học "${appointment.subject}" không?'),
         actions: [
@@ -293,9 +315,15 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
               
               // Check if it's a deadline or subject
               if (appointment.notes == 'deadline') {
-                _deadlineService.deleteDeadline(appointmentId);
+                _deadlineService.deleteDeadline(appointmentId).then((_) {
+                  // Reload appointments after delete
+                  _loadAppointments();
+                });
               } else {
-                _subjectService.deleteSubject(appointmentId);
+                _subjectService.deleteSubject(appointmentId).then((_) {
+                  // Reload appointments after delete
+                  _loadAppointments();
+                });
               }
               
               Navigator.pop(context);
@@ -412,7 +440,10 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
                 deadlineColor: selectedColor,
               );
               
-              _deadlineService.updateDeadline(updatedDeadline);
+              _deadlineService.updateDeadline(updatedDeadline).then((_) {
+                // Reload appointments after update
+                _loadAppointments();
+              });
               Navigator.pop(context);
             },
             child: Text('Lưu'),
@@ -423,32 +454,59 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
   }
 
   void _showDeadlineDialog() {
-    TextEditingController subjectController = TextEditingController();
     TextEditingController deadlineController = TextEditingController();
     DateTime selectedDate = DateTime.now();
     Color selectedColor = _colorCollection[Random().nextInt(_colorCollection.length)];
-
+    String? selectedSubjectId;
+    String? selectedSubjectName;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        title: Text('Thêm Deadline cho môn học', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),),
+        title: Text('Thêm Deadline', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18), textAlign: TextAlign.center,),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: subjectController,
-              decoration: InputDecoration(
-                labelText: 'Tên môn học',
-                hintText: "Nhập tên môn học"
-              ),
+            StreamBuilder<List<SubjectModel>>(
+              stream: _subjectService.getAllSubjects(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return CircularProgressIndicator();
+                }
+
+                final subjects = snapshot.data ?? [];
+                if (subjects.isEmpty) {
+                  return Text('Chưa có môn học nào. Vui lòng thêm môn học trước.');
+                }
+
+                return DropdownButtonFormField<String>(
+                  decoration: InputDecoration(
+                    labelText: 'Tên môn học',
+                    border: OutlineInputBorder(),
+                  ),
+                  value: selectedSubjectId,
+                  items: subjects.map((subject) {
+                    return DropdownMenuItem<String>(
+                      value: subject.id,
+                      child: Text(subject.subject),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedSubjectId = value;
+                      selectedSubjectName = subjects.firstWhere((s) => s.id == value).subject;
+                    });
+                  },
+                );
+              },
             ),
             SizedBox(height: 16),
             TextField(
               controller: deadlineController,
               decoration: InputDecoration(
                 labelText: 'Tên deadline',
-                hintText: 'Nhập tên deadline'
+                hintText: 'Nhập tên deadline',
+                border: OutlineInputBorder(),
               ),
             ),
             SizedBox(height: 16),
@@ -463,11 +521,11 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
                 if (pickedDate != null) {
                   setState(() {
                     selectedDate = DateTime(
-                      pickedDate.year,
-                      pickedDate.month,
-                      pickedDate.day,
-                      selectedDate.hour,
-                      selectedDate.minute
+                        pickedDate.year,
+                        pickedDate.month,
+                        pickedDate.day,
+                        selectedDate.hour,
+                        selectedDate.minute
                     );
                   });
                 }
@@ -504,26 +562,24 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
           ),
           TextButton(
             onPressed: () {
-              if (subjectController.text.isEmpty || deadlineController.text.isEmpty) {
+              if (selectedSubjectId == null || deadlineController.text.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Vui lòng điền đầy đủ thông tin')),
                 );
                 return;
               }
-
-              // Create deadline in Firebase
               DeadlineModel newDeadline = DeadlineModel(
                 id: DateTime.now().millisecondsSinceEpoch.toString(),
                 day: DateTime(selectedDate.year, selectedDate.month, selectedDate.day),
                 timeStart: selectedDate,
                 timeEnd: selectedDate.add(Duration(hours: 1)),
-                subject: subjectController.text,
+                subject: selectedSubjectName!,
                 deadlineName: deadlineController.text,
                 deadlineColor: selectedColor,
               );
-              
-              _deadlineService.addDeadline(newDeadline);
-              Navigator.pop(context);
+              _deadlineService.addDeadline(newDeadline).then((_) {
+                Navigator.pop(context);
+              });
             },
             child: Text('Thêm'),
           ),
@@ -534,31 +590,35 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
 
   void _showAddMenu() {
     showModalBottomSheet(
+      useSafeArea: true,
       context: context,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(15.0)),
       ),
       builder: (context) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            ListTile(
-              leading: Icon(Icons.school, color: Theme.of(context).primaryColor),
-              title: Text('Thêm lịch môn học'),
-              onTap: () {
-                Navigator.pop(context);
-                _showAppointmentDialog(isEdit: false, selectedDate: DateTime.now());
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.assignment_late, color: Theme.of(context).primaryColor),
-              title: Text('Thêm deadline cho môn học'),
-              onTap: () {
-                Navigator.pop(context);
-                _showDeadlineDialog();
-              },
-            ),
-          ],
+        return Padding(
+          padding: const EdgeInsets.all(15),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: Icon(Icons.school, color: AppColors.primaryColor1),
+                title: Text('Thêm lịch môn học'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showAppointmentDialog(isEdit: false, selectedDate: DateTime.now());
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.assignment_late, color: AppColors.primaryColor1),
+                title: Text('Thêm deadline cho môn học'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showDeadlineDialog();
+                },
+              ),
+            ],
+          ),
         );
       },
     );
