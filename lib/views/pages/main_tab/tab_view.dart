@@ -1,3 +1,4 @@
+import 'package:en_time/views/pages/chart/chart_page.dart';
 import 'package:en_time/views/pages/profile_page/profile_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -30,7 +31,11 @@ class _MainTabViewState extends State<MainTabView> {
         width: 70,
         height: 70,
         child: InkWell(
-          onTap: () {},
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ChartPage()),);
+          },
           child: Container(
             width: 65,
             height: 65,

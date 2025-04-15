@@ -1,5 +1,10 @@
+import 'package:en_time/database/models/alarm_model.dart';
+import 'package:en_time/database/services/alarm_services.dart';
+import 'package:en_time/views/pages/alarm/alarm_page.dart';
+import 'package:en_time/views/pages/chart/chart_page.dart';
 import 'package:en_time/views/pages/home/deadline_page.dart';
 import 'package:en_time/views/pages/note/note_page.dart';
+import 'package:en_time/views/pages/task_schedule/remind_task_view.dart';
 import 'package:en_time/views/pages/time_table/custom_timetable_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +22,8 @@ class HomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TaskService _taskService = TaskService();
+    final TaskService taskService = TaskService();
+    final AlarmService alarmService = AlarmService();
     final Size size = MediaQuery.of(context).size;
     
     return Scaffold(
@@ -153,7 +159,7 @@ class HomeView extends StatelessWidget {
                                     ),
                                     SizedBox(height: 4),
                                     StreamBuilder<List<TaskModel>>(
-                                      stream: _taskService.getTasksByDay(DateTime.now()),
+                                      stream: taskService.getTasksByDay(DateTime.now()),
                                       builder: (context, snapshot) {
                                         final int taskCount = snapshot.data?.length ?? 0;
                                         return Text(
@@ -233,7 +239,7 @@ class HomeView extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Icon(
-                                  Icons.calendar_today_rounded,
+                                  Icons.access_alarm,
                                   color: Colors.white,
                                 ),
                               ),
@@ -243,7 +249,7 @@ class HomeView extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      "CÔNG VIỆC HÔM NAY CỦA BẠN",
+                                      "BÁO THỨC CHO BẠN",
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w600,
@@ -251,12 +257,12 @@ class HomeView extends StatelessWidget {
                                       ),
                                     ),
                                     SizedBox(height: 4),
-                                    StreamBuilder<List<TaskModel>>(
-                                      stream: _taskService.getTasksByDay(DateTime.now()),
+                                    StreamBuilder<List<AlarmModel>>(
+                                      stream: alarmService.getAlarms(),
                                       builder: (context, snapshot) {
                                         final int taskCount = snapshot.data?.length ?? 0;
                                         return Text(
-                                          "$taskCount nhiệm vụ cần hoàn thành",
+                                          "$taskCount báo thức đã bật",
                                           style: TextStyle(
                                             color: Colors.white.withOpacity(0.8),
                                             fontSize: 12,
@@ -275,7 +281,7 @@ class HomeView extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => TaskScheduleView(),
+                                  builder: (context) => AlarmPage(),
                                 ),
                               );
                             },
@@ -289,7 +295,7 @@ class HomeView extends StatelessWidget {
                               padding: EdgeInsets.symmetric(horizontal: 15, vertical: 12),
                             ),
                             child: Text(
-                              "Xem lịch biểu",
+                              "Xem ngay",
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 13,
@@ -314,17 +320,6 @@ class HomeView extends StatelessWidget {
                       child: ListView(
                         scrollDirection: Axis.horizontal,
                         children: [
-                          _buildCategoryCard(
-                            icon: Icons.insert_chart_outlined,
-                            title: "Xem biểu đồ",
-                            subtitle: "Đánh giá hiệu suất",
-                            color: Colors.blue,
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('mệt vl')),
-                              );
-                            },
-                          ),
                           _buildCategoryCard(
                             icon: Icons.note_alt,
                             title: "Giấy nhớ",
@@ -359,8 +354,24 @@ class HomeView extends StatelessWidget {
                             subtitle: "Sự kiện quan trọng",
                             color: Colors.green,
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('buồn ngủ vl')),
+                              Navigator.push(context,
+                                  MaterialPageRoute(builder:
+                                      (context) => RemindTaskView(),
+                                  )
+                              );
+                            },
+                          ),
+                          _buildCategoryCard(
+                            icon: Icons.insert_chart_outlined,
+                            title: "Xem biểu đồ",
+                            subtitle: "Đánh giá hiệu suất",
+                            color: Colors.blue,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ChartPage(),
+                                ),
                               );
                             },
                           ),
@@ -401,7 +412,7 @@ class HomeView extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
-                                  "Tuần này",
+                                  "7 ngày gần nhất",
                                   style: TextStyle(
                                     color: AppColors.primaryColor1,
                                     fontSize: 12,
@@ -413,7 +424,7 @@ class HomeView extends StatelessWidget {
                           ),
                           SizedBox(height: 15),
                           StreamBuilder<List<TaskModel>>(
-                            stream: _taskService.getAllTasks(),
+                            stream: taskService.getAllTasks(),
                             builder: (context, snapshot) {
                               if (snapshot.connectionState == ConnectionState.waiting) {
                                 return Center(child: CircularProgressIndicator());
@@ -509,7 +520,7 @@ class HomeView extends StatelessWidget {
                     ),
                     
                     StreamBuilder<List<TaskModel>>(
-                      stream: _taskService.getAllTasks(),
+                      stream: taskService.getAllTasks(),
                       builder: (context, snapshot) {
                         if (snapshot.hasError) {
                           return Center(
@@ -526,9 +537,12 @@ class HomeView extends StatelessWidget {
 
                         final completedTasks = (snapshot.data ?? [])
                             .where((task) => task.isDone)
-                            .take(4)
-                            .toList();
-                        if (completedTasks.isEmpty) {
+                            .toList()
+                            ..sort((a, b) => b.day.compareTo(a.day)); // Sort by date, newest first
+                        
+                        final recentCompletedTasks = completedTasks.take(4).toList();
+
+                        if (recentCompletedTasks.isEmpty) {
                           return Container(
                             padding: const EdgeInsets.all(20.0),
                             margin: EdgeInsets.only(top: 10),
@@ -567,11 +581,11 @@ class HomeView extends StatelessWidget {
                         return ListView.builder(
                           shrinkWrap: true,
                           physics: NeverScrollableScrollPhysics(),
-                          itemCount: completedTasks.length,
+                          itemCount: recentCompletedTasks.length,
                           itemBuilder: (context, index) {
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 10),
-                              child: CompletedTaskCard(task: completedTasks[index]),
+                              child: CompletedTaskCard(task: recentCompletedTasks[index]),
                             );
                           },
                         );

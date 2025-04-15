@@ -37,6 +37,50 @@ class _DeadlinePageState extends State<DeadlinePage> {
     _colorCollection.add(const Color(0xFF0A8043));
   }
 
+  String _getVietnameseFormattedDate(DateTime date) {
+    String getVietnameseWeekday(int weekday) {
+      switch (weekday) {
+        case DateTime.monday:
+          return 'Thứ hai';
+        case DateTime.tuesday:
+          return 'Thứ ba';
+        case DateTime.wednesday:
+          return 'Thứ tư';
+        case DateTime.thursday:
+          return 'Thứ năm';
+        case DateTime.friday:
+          return 'Thứ sáu';
+        case DateTime.saturday:
+          return 'Thứ bảy';
+        case DateTime.sunday:
+          return 'Chủ nhật';
+        default:
+          return '';
+      }
+    }
+    return '${getVietnameseWeekday(date.weekday)}, ${date.day} tháng ${date.month} ${date.year}';
+  }
+  String _formatDate(DateTime date) {
+    String getVietnameseWeekday(int weekday) {
+      switch (weekday) {
+        case DateTime.monday: return 'T2';
+        case DateTime.tuesday: return 'T3';
+        case DateTime.wednesday: return 'T4';
+        case DateTime.thursday: return 'T5';
+        case DateTime.friday: return 'T6';
+        case DateTime.saturday: return 'T7';
+        case DateTime.sunday: return 'CN';
+        default: return '';
+      }
+    }
+
+    return '${getVietnameseWeekday(date.weekday)}, ${date.day}/${date.month}';
+  }
+
+  String _formatTime(DateTime time) {
+    return DateFormat('hh:mm a').format(time);
+  }
+
   void _showAddDeadlineDialog() {
     TextEditingController deadlineController = TextEditingController();
     DateTime selectedDate = DateTime.now();
@@ -379,6 +423,60 @@ class _DeadlinePageState extends State<DeadlinePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
+      appBar: AppBar( 
+        backgroundColor: AppColors.white,
+        centerTitle: true,
+        elevation: 0,
+        leading: InkWell(
+          onTap: () {
+            Navigator.pop(context);
+          },
+          child: Container(
+            margin: const EdgeInsets.all(8),
+            height: 40,
+            width: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppColors.lightGray,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Image.asset(
+              "assets/images/black_btn.png",
+              width: 15,
+              height: 15,
+              fit: BoxFit.contain,
+            ),
+          ),
+        ),
+        title: Text(
+          "Quản lý deadline",
+          style: TextStyle(
+            color: AppColors.black,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.15),
+                  spreadRadius: 1,
+                  blurRadius: 3,
+                ),
+              ],
+            ),
+            child: IconButton(
+              onPressed: _showAddDeadlineDialog,
+              icon: Icon(Icons.add, color: AppColors.primaryColor1),
+            ),
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: SingleChildScrollView(
@@ -398,66 +496,14 @@ class _DeadlinePageState extends State<DeadlinePage> {
                     ),
                   ],
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: Container(
-                            height: 50,
-                            width: 50,
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.04),
-                              shape: BoxShape.circle
-                            ),
-                            child: Icon(
-                              Icons.arrow_back_ios_new,
-                              size: 15,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 15),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              DateFormat('EEEE, d MMMM y').format(DateTime.now()),
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 14,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              "Quản lý deadline",
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 22,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.15),
-                            spreadRadius: 1,
-                            blurRadius: 3,
-                          ),
-                        ],
-                      ),
-                      child: IconButton(
-                        onPressed: _showAddDeadlineDialog,
-                        icon: Icon(Icons.add, color: AppColors.primaryColor1),
+                    Text(
+                      _getVietnameseFormattedDate(DateTime.now()),
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
                       ),
                     ),
                   ],
@@ -819,11 +865,5 @@ class _DeadlinePageState extends State<DeadlinePage> {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return DateFormat('MMM d').format(date);
-  }
 
-  String _formatTime(DateTime time) {
-    return DateFormat('hh:mm a').format(time);
-  }
 }

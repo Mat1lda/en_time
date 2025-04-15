@@ -1,4 +1,5 @@
 import 'package:en_time/views/pages/task_schedule/completed_task_view.dart';
+import 'package:en_time/views/pages/task_schedule/remind_task_view.dart';
 import 'package:en_time/views/pages/task_schedule/task_schedule_view.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -45,7 +46,7 @@ class _HomeTaskViewState extends State<HomeTaskView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          DateFormat('EEEE, d MMMM y').format(DateTime.now()),
+                          _getVietnameseFormattedDate(DateTime.now()),
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 14,
@@ -199,7 +200,12 @@ class _HomeTaskViewState extends State<HomeTaskView> {
                                 icon: Icons.notifications,
                                 label: "Nhắc nhở",
                                 onTap: () {
-                                  // TODO: Implement notifications view
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const RemindTaskView(),
+                                    ),
+                                  );
                                 },
                               ),
                             ],
@@ -317,51 +323,61 @@ class _HomeTaskViewState extends State<HomeTaskView> {
                       ),
                     ),
                     SizedBox(height: 15),
-                    Container(
-                      padding: EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            spreadRadius: 1,
-                            blurRadius: 5,
+                    GestureDetector(
+                      onTap: (){
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const RemindTaskView(),
                           ),
-                        ],
-                      ),
-                      child: StreamBuilder<List<TaskModel>>(
-                        stream: _taskService.getUpcomingTasks(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return Center(child: CircularProgressIndicator());
-                          }
+                        );
+                      },
+                      child: Container(
+                        padding: EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              spreadRadius: 1,
+                              blurRadius: 5,
+                            ),
+                          ],
+                        ),
+                        child: StreamBuilder<List<TaskModel>>(
+                          stream: _taskService.getUpcomingTasks(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return Center(child: CircularProgressIndicator());
+                            }
 
-                          final upcomingTasks = snapshot.data ?? [];
-                          if (upcomingTasks.isEmpty) {
-                            return Column(
-                              children: [
-                                Icon(
-                                  Icons.event_busy,
-                                  size: 50,
-                                  color: Colors.grey[400],
-                                ),
-                                SizedBox(height: 10),
-                                Text(
-                                  'Không có công việc sắp tới',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 14,
+                            final upcomingTasks = snapshot.data ?? [];
+                            if (upcomingTasks.isEmpty) {
+                              return Column(
+                                children: [
+                                  Icon(
+                                    Icons.event_busy,
+                                    size: 50,
+                                    color: Colors.grey[400],
                                   ),
-                                ),
-                              ],
-                            );
-                          }
+                                  SizedBox(height: 10),
+                                  Text(
+                                    'Không có công việc sắp tới',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
 
-                          return Column(
-                            children: upcomingTasks.take(3).map((task) => _buildTaskItem(task)).toList(),
-                          );
-                        },
+                            return Column(
+                              children: upcomingTasks.take(3).map((task) => _buildTaskItem(task)).toList(),
+                            );
+                          },
+                        ),
                       ),
                     ),
                     SizedBox(height: 25),
@@ -572,8 +588,11 @@ class _HomeTaskViewState extends State<HomeTaskView> {
       ),
     );
   }
-
+  //card cho công việc sắp tới
   Widget _buildTaskItem(TaskModel task) {
+    String getVietnameseFormattedDate(DateTime date) {
+      return '${_getVietnameseWeekday(date)}, ${date.day} tháng ${date.month} ${date.year}';
+    }
     return Container(
       margin: EdgeInsets.only(bottom: 12),
       padding: EdgeInsets.all(12),
@@ -613,7 +632,7 @@ class _HomeTaskViewState extends State<HomeTaskView> {
                     Icon(Icons.calendar_today, size: 12, color: Colors.grey[600]),
                     SizedBox(width: 4),
                     Text(
-                      DateFormat('MMM d').format(task.day),
+                      getVietnameseFormattedDate(task.day),
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: 12,
@@ -674,8 +693,8 @@ class _HomeTaskViewState extends State<HomeTaskView> {
               borderRadius: BorderRadius.circular(10),
             ),
             child: Image.asset(
-              imagePath, // Load image instead of an icon
-              height: 40, // Set image size
+              imagePath,
+              height: 40,
               width: 40,
               fit: BoxFit.contain,
             ),
@@ -706,7 +725,6 @@ class _HomeTaskViewState extends State<HomeTaskView> {
     final day = DateTime.now().subtract(Duration(days: 6 - index));
     final startOfDay = DateTime(day.year, day.month, day.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
-
     return Container(
       width: 40,
       child: StreamBuilder<List<TaskModel>>(
@@ -724,7 +742,7 @@ class _HomeTaskViewState extends State<HomeTaskView> {
           return Column(
             children: [
               Text(
-                DateFormat('E').format(day),
+                _getVietnameseWeekday(day),
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey[600],
@@ -766,5 +784,30 @@ class _HomeTaskViewState extends State<HomeTaskView> {
         },
       ),
     );
+  }
+
+  String _getVietnameseWeekday(DateTime date) {
+    switch (date.weekday) {
+      case DateTime.monday:
+        return 'Thứ 2';
+      case DateTime.tuesday:
+        return 'Thứ 3';
+      case DateTime.wednesday:
+        return 'Thứ 4';
+      case DateTime.thursday:
+        return 'Thứ 5';
+      case DateTime.friday:
+        return 'Thứ 6';
+      case DateTime.saturday:
+        return 'Thứ 7';
+      case DateTime.sunday:
+        return 'CN';
+      default:
+        return '';
+    }
+  }
+
+  String _getVietnameseFormattedDate(DateTime date) {
+    return '${_getVietnameseWeekday(date)}, ${date.day} tháng ${date.month} năm ${date.year}';
   }
 }
