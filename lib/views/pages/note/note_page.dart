@@ -239,7 +239,9 @@ class _NotePageState extends State<NotePage> {
             child: Text('Hủy'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: (){
+              Navigator.pop(context, true);
+              },
             child: Text(
               'Xóa',
               style: TextStyle(color: Colors.red),
@@ -253,7 +255,15 @@ class _NotePageState extends State<NotePage> {
       try {
         await _noteService.deleteNote(note.id!);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Đã xóa ghi chú')),
+          SnackBar(
+            content: Text('Đã xóa báo ghi chú'),
+            backgroundColor: Colors.grey,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            margin: EdgeInsets.all(16),
+          ),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -70,72 +70,66 @@ exports.scheduleTaskNotification = onDocumentCreated("tasks/{taskId}", async (ev
   }
 });
 
-// 🕐 Gửi thông báo mỗi phút
-exports.sendScheduledNotifications = onSchedule("every 1 minutes", async () => {
-  const db = getFirestore();
-  const now = Timestamp.now();
+exports.deadlineNotification = onDocumentCreated("deadlines/{deadlineId}", async (event) => {
+  const snap = event.data;
+  const context = event.params;
+
+  if (!snap) {
+    logger.warn("No snapshot data found.");
+    return;
+  }
+
+  const deadline = snap.data();
+  const deadlineId = context.deadlineId;
+  const userId = deadline.userId;
 
   try {
-    const snapshot = await db.collection("scheduledNotifications")
-      .where("sent", "==", false)
-      .where("notificationTime", "<=", now)
-      .get();
+    const timeEndRaw = deadline.timeEnd;
+    const dayRaw = deadline.day;
+    const deadlineName = deadline.deadlineName || "Deadline";
 
-    if (snapshot.empty) {
-      logger.info("⏳ Không có thông báo nào cần gửi lúc này.");
+    // ✅ Bỏ qua nếu deadline đã hoàn thành
+    if (deadline.isDone === true) {
+      logger.info(`⛔ Bỏ qua: Deadline ${deadlineId} đã hoàn thành (isDone = true)`);
       return;
     }
 
-    const batch = db.batch();
-
-    const sendPromises = snapshot.docs.map(async (doc) => {
-      const notificationId = doc.id;
-      const data = doc.data();
-      const { userId, taskId, title } = data;
-
-      try {
-        const userDoc = await db.collection("users").doc(userId).get();
-        const fcmTokens = userDoc.data()?.fcmTokens || [];
-
-        if (fcmTokens.length === 0) {
-          logger.info("⚠️ Không có FCM token cho user:", userId);
-          return;
-        }
-        // ✅ Gửi bằng sendMulticast để tránh lỗi `/batch`
-        const response = await getMessaging().sendMulticast({
-          tokens: fcmTokens,
-          notification: {
-            title: "Nhắc nhở",
-            body: `Nhiệm vụ "${title}" sẽ bắt đầu sau 10 phút!`,
-          },
-          data: {
-            taskId: taskId,
-          },
-        });
-over
-        logger.info(`🔔 Gửi ${response.successCount}/${fcmTokens.length} thông báo thành công cho task: ${taskId}`);
-
-        batch.update(doc.ref, { sent: true });
-
-        response.responses.forEach((resp, idx) => {
-          if (!resp.success) {
-            logger.warn(`❌ Token lỗi (user ${userId}): ${fcmTokens[idx]}`, resp.error);
-          }
-        });
-
-      } catch (error) {
-        logger.error(`❌ Lỗi khi gửi notification [${notificationId}] cho task ${taskId}:`, error);
-      }
-    });
-
-    for (const sendPromise of sendPromises) {
-      await sendPromise;
+    if (!timeEndRaw || !dayRaw) {
+      logger.error("❌ Thiếu timeEnd hoặc day:", deadline);
+      return;
     }
 
-    await batch.commit();
-    logger.info("✅ Đã xử lý và cập nhật tất cả các thông báo cần gửi.");
+    const timeEnd = DateTime.fromISO(timeEndRaw, { zone: "Asia/Ho_Chi_Minh" });
+    const day = DateTime.fromISO(dayRaw, { zone: "Asia/Ho_Chi_Minh" });
 
+    if (!timeEnd.isValid || !day.isValid) {
+      logger.error("❌ Không thể phân tích timeEnd hoặc day:", { timeEndRaw, dayRaw });
+      return;
+    }
+
+    const notifyAt = timeEnd.minus({ hours: 12 });
+    const now = DateTime.now().setZone("Asia/Ho_Chi_Minh");
+
+    // ✅ Nếu notification time đã trôi qua, không lưu
+    if (notifyAt < now) {
+      logger.info(`⏩ Bỏ qua: notificationTime (${notifyAt.toISO()}) đã qua hiện tại (${now.toISO()})`);
+      return;
+    }
+
+    await getFirestore().collection("scheduledDeadlineNotifications").add({
+      deadlineId,
+      userId,
+      title: `Sắp đến hạn: ${deadlineName}`,
+      subject: deadline.subject || "Chưa rõ môn",
+      notificationTime: Timestamp.fromDate(notifyAt.toJSDate()),
+      sent: false,
+      type: "deadline",
+    });
+
+    logger.info(`✅ Đã lưu scheduled notification cho deadline: ${deadlineId}`);
   } catch (error) {
-    logger.error("🔥 Lỗi trong hàm sendScheduledNotifications:", error);
+    logger.error("❌ Lỗi khi xử lý deadlineNotification:", error);
   }
 });
+
+

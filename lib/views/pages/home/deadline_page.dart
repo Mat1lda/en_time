@@ -408,7 +408,15 @@ class _DeadlinePageState extends State<DeadlinePage> {
               _deadlineService.deleteDeadline(deadline.id).then((_) {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Đã xóa deadline')),
+                  SnackBar(
+                    content: Text('Đã xóa deadline'),
+                    backgroundColor: Colors.grey,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    margin: EdgeInsets.all(16),
+                  ),
                 );
               });
             },

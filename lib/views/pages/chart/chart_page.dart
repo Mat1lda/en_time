@@ -1,3 +1,7 @@
+import 'package:en_time/views/pages/home/deadline_page.dart';
+import 'package:en_time/views/pages/task_schedule/home_task_view.dart';
+import 'package:en_time/views/pages/task_schedule/remind_task_view.dart';
+import 'package:en_time/views/pages/time_table/custom_timetable_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../components/colors.dart';
@@ -109,31 +113,47 @@ class _ChartPageState extends State<ChartPage> {
         return Container(
           margin: EdgeInsets.only(bottom: 20),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               Expanded(
-                child: _buildPerformanceCard(
-                  icon: Icons.task_alt,
-                  title: "Task",
-                  value: "$completedTasks/$totalTasks",
-                  color: AppColors.primaryColor1,
+                child: GestureDetector(
+                  onTap: (){
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => RemindTaskView(),));
+                  },
+                  child: _buildPerformanceCard(
+                    icon: Icons.task_alt,
+                    title: "Task",
+                    value: "$completedTasks/$totalTasks",
+                    color: AppColors.primaryColor1,
+                  ),
                 ),
               ),
               SizedBox(width: 12),
               Expanded(
-                child: _buildPerformanceCard(
-                  icon: Icons.alarm,
-                  title: "Deadline",
-                  value: "$upcomingDeadlines/${deadlines.length} sắp tới",
-                  color: Colors.orange,
+                child: GestureDetector(
+                  onTap: (){
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => DeadlinePage(),));
+                  },
+                  child: _buildPerformanceCard(
+                    icon: Icons.alarm,
+                    title: "Deadline",
+                    value: "$upcomingDeadlines/${deadlines.length} sắp tới",
+                    color: Colors.orange,
+                  ),
                 ),
               ),
               SizedBox(width: 12),
               Expanded(
-                child: _buildPerformanceCard(
-                  icon: Icons.school,
-                  title: "Lớp học",
-                  value: "$attendedSubjects/5",
-                  color: Colors.blue,
+                child: GestureDetector(
+                  onTap: (){
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => CustomTimetableScreem(),));
+                  },
+                  child: _buildPerformanceCard(
+                    icon: Icons.school,
+                    title: "Lớp học",
+                    value: "$attendedSubjects/5",
+                    color: Colors.blue,
+                  ),
                 ),
               ),
             ],

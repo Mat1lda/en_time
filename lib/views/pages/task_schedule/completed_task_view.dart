@@ -161,6 +161,17 @@ class _CompletedTaskViewState extends State<CompletedTaskView> {
                                 onPressed: () {
                                   _taskService.deleteTask(task.id);
                                   Navigator.pop(context);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Đã xóa nhiệm vụ'),
+                                      backgroundColor: Colors.grey,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      margin: EdgeInsets.all(16),
+                                    ),
+                                  );
                                 },
                                 child: Text('Xóa'),
                                 style: TextButton.styleFrom(
