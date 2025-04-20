@@ -6,7 +6,22 @@ class NoteService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final String _collection = 'notes';
+
   String get _currentUserId => _auth.currentUser?.uid ?? '';
+
+  Future<void> addCategory(String category) async {
+    final doc = await _firestore
+        .collection('categories')
+        .where('name', isEqualTo: category)
+        .get();
+
+    if (doc.docs.isEmpty) {
+      await _firestore.collection('categories').add({
+        'name': category,
+        'userId': _currentUserId,
+      });
+    }
+  }
 
   // Get all notes
   Stream<List<Note>> getNotes() {
@@ -18,11 +33,11 @@ class NoteService {
       final notes = snapshot.docs
           .map((doc) => Note.fromMap(doc.data(), doc.id))
           .toList();
-      // Sort notes by updatedAt in descending order
       notes.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       return notes;
     });
   }
+
   // Get all categories
   Stream<List<String>> getCategories() {
     return _firestore
@@ -39,6 +54,7 @@ class NoteService {
       return categories;
     });
   }
+
   // Get a single note
   Future<Note?> getNote(String id) async {
     final doc = await _firestore.collection(_collection).doc(id).get();
@@ -47,8 +63,17 @@ class NoteService {
     }
     return null;
   }
-  // Create a new note
-  Future<String> createNote(String title, String content, {String? category}) async {
+
+  // ✅ Create a new note (support themeColor, fontColor, fontSize, isHidden)
+  Future<String> createNote(
+      String title,
+      String content, {
+        String? category,
+        String? themeColor,
+        String? fontColor,
+        int? fontSize,
+        bool isHidden = false,
+      }) async {
     final now = DateTime.now();
     final noteData = {
       ...Note(
@@ -57,6 +82,10 @@ class NoteService {
         category: category ?? 'Chưa phân loại',
         createdAt: now,
         updatedAt: now,
+        themeColor: themeColor,
+        fontColor: fontColor,
+        fontSize: fontSize,
+        isHidden: isHidden,
       ).toMap(),
       'userId': _currentUserId,
     };
@@ -64,16 +93,33 @@ class NoteService {
     final docRef = await _firestore.collection(_collection).add(noteData);
     return docRef.id;
   }
-  // Update a note
-  Future<void> updateNote(String id, String title, String content, {String? category}) async {
-    await _firestore.collection(_collection).doc(id).update({
+
+  // ✅ Update a note (support themeColor, fontColor, fontSize, isHidden)
+  Future<void> updateNote(
+      String id,
+      String title,
+      String content, {
+        String? category,
+        String? themeColor,
+        String? fontColor,
+        double? fontSize,
+        bool? isHidden,
+      }) async {
+    final updateData = {
       'title': title,
       'content': content,
-      if (category != null) 'category': category,
       'updatedAt': DateTime.now().toIso8601String(),
       'userId': _currentUserId,
-    });
+      if (category != null) 'category': category,
+      if (themeColor != null) 'themeColor': themeColor,
+      if (fontColor != null) 'fontColor': fontColor,
+      if (fontSize != null) 'fontSize': fontSize,
+      if (isHidden != null) 'isHidden': isHidden,
+    };
+
+    await _firestore.collection(_collection).doc(id).update(updateData);
   }
+
   // Update note category
   Future<void> updateNoteCategory(String id, String category) async {
     await _firestore.collection(_collection).doc(id).update({
@@ -87,4 +133,4 @@ class NoteService {
   Future<void> deleteNote(String id) async {
     await _firestore.collection(_collection).doc(id).delete();
   }
-} 
+}

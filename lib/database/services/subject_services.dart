@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import '../models/subject_model.dart';
 
 class SubjectService {
@@ -83,4 +84,31 @@ class SubjectService {
           return subjects;
         });
   }
+
+  Future<List<SubjectModel>> getUpcomingSubjects({int limit = 3}) async {
+    try {
+      final snapshot = await _subjectsCollection
+          .where('userId', isEqualTo: _currentUserId)
+          .get();
+
+      final now = DateTime.now();
+
+      final upcomingSubjects = snapshot.docs.map((doc) {
+        return SubjectModel.fromMap({
+          'id': doc.id,
+          ...doc.data() as Map<String, dynamic>,
+        });
+      }).where((subject) {
+        return subject.timeStart.isAfter(now);
+      }).toList();
+
+      // Sắp xếp theo thời gian bắt đầu
+      upcomingSubjects.sort((a, b) => a.timeStart.compareTo(b.timeStart));
+
+      return upcomingSubjects.take(limit).toList();
+    } catch (e) {
+      throw Exception('Failed to get upcoming subjects: $e');
+    }
+  }
+
 } 

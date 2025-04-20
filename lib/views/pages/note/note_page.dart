@@ -15,9 +15,29 @@ class NotePage extends StatefulWidget {
 }
 
 class _NotePageState extends State<NotePage> {
+
   final NoteService _noteService = NoteService();
   String _selectedCategory = 'Tất cả';
   final _searchController = TextEditingController();
+
+  Color parseColor(String? hexColor, {Color fallback = Colors.black}) {
+    if (hexColor == null || hexColor.isEmpty) return fallback;
+
+    try {
+      // Nếu chỉ có 6 ký tự thì thêm 'FF' làm opacity (fully opaque)
+      if (hexColor.length == 6) {
+        hexColor = 'FF$hexColor';
+      }
+      // Nếu có # ở đầu thì bỏ đi
+      if (hexColor.startsWith('#')) {
+        hexColor = hexColor.replaceFirst('#', '');
+      }
+      return Color(int.parse(hexColor, radix: 16));
+    } catch (e) {
+      return fallback;
+    }
+  }
+
 
   @override
   void dispose() {
@@ -26,10 +46,13 @@ class _NotePageState extends State<NotePage> {
   }
 
   List<Note> _filterNotes(List<Note> notes) {
+    final visibleNotes = notes.where((note) => note.isHidden != true).toList();
     if (_selectedCategory == 'Tất cả') {
-      return notes;
+      return visibleNotes;
     }
-    return notes.where((note) => note.category == _selectedCategory).toList();
+    return visibleNotes
+        .where((note) => note.category == _selectedCategory)
+        .toList();
   }
 
   @override
@@ -52,16 +75,10 @@ class _NotePageState extends State<NotePage> {
               controller: _searchController,
               decoration: InputDecoration(
                 border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                errorBorder: InputBorder.none,
-                disabledBorder: InputBorder.none,
                 hintText: 'Tìm kiếm ghi chú',
                 prefixIcon: Icon(Icons.search, color: Colors.grey),
                 filled: true,
-                //fillColor: Colors.grey[800],
-                contentPadding: EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 12),
+                contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 hintStyle: TextStyle(color: Colors.grey[400]),
               ),
               style: TextStyle(color: Colors.black54),
@@ -72,23 +89,15 @@ class _NotePageState extends State<NotePage> {
             child: StreamBuilder<List<String>>(
               stream: _noteService.getCategories(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return SizedBox();
-                }
-                final categories = [
-                  'Tất cả',
-                  'Chưa phân loại',
-                  ...?snapshot.data
-                ];
+                if (!snapshot.hasData) return SizedBox();
+                final categories = ['Tất cả', 'Chưa phân loại', ...?snapshot.data];
                 return ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: EdgeInsets.symmetric(horizontal: 12),
                   itemCount: categories.length,
                   itemBuilder: (context, index) {
                     final category = categories[index];
-                    final isSelected = category ==
-                        _selectedCategory; //ktra xem cate co = voi selected khong, bang thi ís = true
-
+                    final isSelected = category == _selectedCategory;
                     return Padding(
                       padding: EdgeInsets.symmetric(horizontal: 4),
                       child: FilterChip(
@@ -99,7 +108,7 @@ class _NotePageState extends State<NotePage> {
                           ),
                         ),
                         selected: isSelected,
-                        onSelected: (selected) {
+                        onSelected: (_) {
                           setState(() {
                             _selectedCategory = category;
                           });
@@ -126,13 +135,17 @@ class _NotePageState extends State<NotePage> {
                 if (!snapshot.hasData) {
                   return Center(child: CircularProgressIndicator());
                 }
+
                 final notes = _filterNotes(snapshot.data!);
                 if (notes.isEmpty) {
-                  return Center(child: Text(
-                    'Chưa có ghi chú',
-                    style: TextStyle(color: Colors.grey[400]),
-                  ));
+                  return Center(
+                    child: Text(
+                      'Chưa có ghi chú',
+                      style: TextStyle(color: Colors.grey[400]),
+                    ),
+                  );
                 }
+
                 return Padding(
                   padding: EdgeInsets.all(8),
                   child: GridView.builder(
@@ -145,9 +158,13 @@ class _NotePageState extends State<NotePage> {
                     itemCount: notes.length,
                     itemBuilder: (context, index) {
                       final note = notes[index];
+                      final bgColor = parseColor(note.themeColor, fallback: Colors.black); // mặc định màu đen
+                      final textColor = parseColor(note.fontColor, fallback: Colors.black); // mặc định màu trắng
+                      final fontSize = note.fontSize?.toDouble() ?? 14.0;
+
                       return Card(
                         elevation: 1,
-                        color: Colors.grey[800],
+                        color: bgColor,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -165,9 +182,9 @@ class _NotePageState extends State<NotePage> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white,
+                                    fontSize: fontSize + 2,
+                                    fontWeight: FontWeight.w600,
+                                    color: textColor,
                                   ),
                                 ),
                                 SizedBox(height: 8),
@@ -177,8 +194,8 @@ class _NotePageState extends State<NotePage> {
                                     maxLines: 4,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey[400],
+                                      fontSize: fontSize,
+                                      color: textColor.withOpacity(0.85),
                                     ),
                                   ),
                                 ),
@@ -186,7 +203,7 @@ class _NotePageState extends State<NotePage> {
                                 Text(
                                   _formatDate(note.updatedAt),
                                   style: TextStyle(
-                                    color: Colors.grey[500],
+                                    color: textColor.withOpacity(0.7),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -239,9 +256,7 @@ class _NotePageState extends State<NotePage> {
             child: Text('Hủy'),
           ),
           TextButton(
-            onPressed: (){
-              Navigator.pop(context, true);
-              },
+            onPressed: () => Navigator.pop(context, true),
             child: Text(
               'Xóa',
               style: TextStyle(color: Colors.red),
@@ -256,7 +271,7 @@ class _NotePageState extends State<NotePage> {
         await _noteService.deleteNote(note.id!);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Đã xóa báo ghi chú'),
+            content: Text('Đã xóa ghi chú'),
             backgroundColor: Colors.grey,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(

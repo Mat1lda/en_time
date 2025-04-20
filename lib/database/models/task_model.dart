@@ -8,6 +8,7 @@ class TaskModel {
   final bool isDone;
   final String taskType;
   final String userId;
+  bool isHidden;
 
   TaskModel({
     required this.id,
@@ -16,6 +17,7 @@ class TaskModel {
     required this.content,
     required this.isDone,
     required this.taskType,
+    this.isHidden = false,
     required this.userId,
   });
 

@@ -1,6 +1,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:en_time/firebase_api.dart';
+import 'package:en_time/views/pages/auth/forgot_password.dart';
 import 'package:en_time/views/pages/auth/signup_page.dart';
 import 'package:en_time/views/pages/main_tab/tab_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -143,7 +144,10 @@ class _LoginPageState extends State<LoginPage> {
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () {
-                  // TODO: Implement forgot password
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => ForgotPasswordPage()),
+                  );
                 },
                 child: const Text(
                   'Quên mật khẩu?',

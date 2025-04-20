@@ -3,9 +3,17 @@ const { GoogleAuth } = require("google-auth-library");
 const axios = require("axios");
 const cron = require("node-cron");
 const express = require("express");
+const admin = require('firebase-admin');
+const nodemailer = require('nodemailer');
+require("dotenv").config(); // đầu file
 
 const app = express();
 const PORT = 8000;
+app.use(express.json()); // đảm bảo body JSON được đọc
+const serviceAccount = require('./serviceAccount.json');
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
 // 🔑 Khởi tạo Firestore với Service Account
 const firestore = new Firestore({
@@ -293,12 +301,56 @@ async function sendAlarmNotifications() {
 }
 
 // 📅 Chạy cron job mỗi phút
-cron.schedule("* * * * *", () => {
-  console.log("🔁 Cron job chạy: kiểm tra notification");
-  sendScheduledNotifications();
-  sendScheduledDeadlineNotifications();
-  sendAlarmNotifications();
+//cron.schedule("* * * * *", () => {
+//  console.log("🔁 Cron job chạy: kiểm tra notification");
+//  sendScheduledNotifications();
+//  sendScheduledDeadlineNotifications();
+//  sendAlarmNotifications();
+//});
+
+app.post("/send-email-password", async (req, res) => {
+  const { email, password } = req.body;
+      console.log('da vao day')
+  if (!email || !password) {
+    return res.status(400).json({ message: "Thiếu email hoặc password!" });
+  }
+    const userRecord = await admin.auth().getUserByEmail(email);
+
+    // Cập nhật mật khẩu trong Firebase Auth
+    await admin.auth().updateUser(userRecord.uid, { password });
+
+  try {
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USERNAME, // từ .env
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
+
+    const mailOptions = {
+      from: `"EnTime" <${process.env.EMAIL_USERNAME}>`,
+      to: email,
+      subject: "🔐 Mật khẩu mới của bạn",
+      html: `
+        <p>Chào bạn,</p>
+        <p>Mật khẩu mới của bạn là:</p>
+        <h2 style="color:#333;">${password}</h2>
+        <p>Hãy đăng nhập và thay đổi mật khẩu ngay nhé.</p>
+        <br/>
+        <p>Thân mến,<br/>Đội ngũ EnTime</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Đã gửi email chứa password tới ${email}`);
+    res.status(200).json({ message: "Email đã được gửi." });
+  } catch (error) {
+    console.error("❌ Lỗi gửi email:", error);
+    res.status(500).json({ message: "Gửi email thất bại.", error: error.toString() });
+  }
 });
+
 
 // 🚀 Start server
 app.get("/", (req, res) => {

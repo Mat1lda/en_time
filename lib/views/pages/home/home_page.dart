@@ -1,5 +1,7 @@
 import 'package:en_time/database/models/alarm_model.dart';
+import 'package:en_time/database/models/subject_model.dart';
 import 'package:en_time/database/services/alarm_services.dart';
+import 'package:en_time/database/services/subject_services.dart';
 import 'package:en_time/views/pages/alarm/alarm_page.dart';
 import 'package:en_time/views/pages/chart/chart_page.dart';
 import 'package:en_time/views/pages/home/deadline_page.dart';
@@ -16,7 +18,7 @@ import '../../widgets/completed_task_card.dart';
 import '../task_schedule/completed_task_view.dart';
 import '../task_schedule/task_schedule_view.dart';
 import 'noti_page.dart';
-
+import 'package:intl/intl.dart';
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
 
@@ -29,11 +31,13 @@ class HomeView extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: SafeArea(
+
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
+                margin: const EdgeInsets.all(10),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -99,6 +103,142 @@ class HomeView extends StatelessWidget {
                           fit: BoxFit.fitHeight,
                         ),
                       ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primaryColor2.withOpacity(0.9),
+                      AppColors.primaryColor1.withOpacity(0.8),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primaryColor2.withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.book_rounded,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 15),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "3 MÔN HỌC SẮP TỚI",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              FutureBuilder<List<SubjectModel>>(
+                                future: SubjectService().getUpcomingSubjects(limit: 3),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState == ConnectionState.waiting) {
+                                    return const Text(
+                                      "Đang tải...",
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                      ),
+                                    );
+                                  }
+
+                                  final subjects = snapshot.data ?? [];
+
+                                  if (subjects.isEmpty) {
+                                    return const Text(
+                                      "Hiện tại không có môn học nào",
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                      ),
+                                    );
+                                  }
+
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      ...subjects.map((subject) {
+                                        final dateTimeFormat = DateFormat("dd/MM/yyyy HH:mm");
+                                        final timeStr =
+                                            "${dateTimeFormat.format(subject.timeStart)} - ${dateTimeFormat.format(subject.timeEnd)}";
+
+                                        return Padding(
+                                          padding: const EdgeInsets.only(top: 6.0),
+                                          child: Text(
+                                            "${subject.subject} (${timeStr})",
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                      const SizedBox(height: 8),
+                                      GestureDetector(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => CustomTimetableScreem(),
+                                            ),
+                                          );
+                                        },
+                                        child: Container(
+                                          width: 120, // ← Bạn bảo 40 nhưng 40 hơi bé, mình để 80 cho vừa chữ, có thể chỉnh lại
+                                          height: 40, // ← Tương tự, chỉnh từ 20 lên 28 cho đẹp
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            "Xem lịch học",
+                                            style: TextStyle(
+                                              color: Colors.blueAccent, // Xanh nước biển
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

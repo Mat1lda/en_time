@@ -5,6 +5,10 @@ class Note {
   final String category;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? themeColor;
+  final String? fontColor; // màu chữ (hex string: 'FFFFFFFF')
+  final int? fontSize;     // cỡ chữ
+  final bool? isHidden;    // ẩn ghi chú
 
   Note({
     this.id,
@@ -13,7 +17,12 @@ class Note {
     required this.category,
     required this.createdAt,
     required this.updatedAt,
+    this.themeColor,
+    this.fontColor,
+    this.fontSize,
+    this.isHidden,
   });
+
 
   Map<String, dynamic> toMap() {
     return {
@@ -23,6 +32,10 @@ class Note {
       'category': category,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'themeColor': themeColor,
+      'fontColor': fontColor,
+      'fontSize': fontSize,
+      'isHidden': isHidden ?? false,
     };
   }
 
@@ -34,6 +47,11 @@ class Note {
       category: map['category'] ?? 'Chưa phân loại',
       createdAt: DateTime.parse(map['createdAt']),
       updatedAt: DateTime.parse(map['updatedAt']),
+      themeColor: map['themeColor'],
+      fontColor: map['fontColor'],
+      fontSize: map['fontSize'],
+      isHidden: map['isHidden'] ?? false,
     );
   }
-} 
+
+}

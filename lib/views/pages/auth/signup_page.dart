@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import '../../../components/colors.dart';
 import '../../../database/services/Auth_Service.dart';
@@ -6,9 +5,8 @@ import '../../widgets/app_bar.dart';
 import '../../widgets/basic_app_buttons.dart';
 import 'login_page.dart';
 
-class SignupPage extends StatefulWidget{
-
-  SignupPage({super.key});
+class SignupPage extends StatefulWidget {
+  const SignupPage({super.key});
 
   @override
   State<SignupPage> createState() => _SignupPageState();
@@ -18,9 +16,13 @@ class _SignupPageState extends State<SignupPage> {
   final TextEditingController fullName = TextEditingController();
   final TextEditingController email = TextEditingController();
   final TextEditingController password = TextEditingController();
+  final TextEditingController confirmPassword = TextEditingController();
   final AuthService _authService = AuthService();
+
   bool _isPasswordVisible = false;
   bool isLoading = false;
+
+  final _formKey = GlobalKey<FormState>();
 
   bool isValidEmail(String email) {
     return RegExp(
@@ -48,7 +50,16 @@ class _SignupPageState extends State<SignupPage> {
     return null;
   };
 
-  void _signUp() async {
+  Future<void> _signUp() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    if (password.text.trim() != confirmPassword.text.trim()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Mật khẩu không khớp")),
+      );
+      return;
+    }
+
     setState(() {
       isLoading = true;
     });
@@ -81,7 +92,6 @@ class _SignupPageState extends State<SignupPage> {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return Scaffold(
       bottomNavigationBar: signInText(context),
       appBar: BasicAppbar(
@@ -96,71 +106,38 @@ class _SignupPageState extends State<SignupPage> {
           vertical: MediaQuery.of(context).size.height * 0.01,
           horizontal: MediaQuery.of(context).size.width * 0.05,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          //mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            registerText(),
-            const SizedBox(
-              height: 10,
-            ),
-            const Text(
-              "Đăng ký để quản lý thời gian của bạn",
-              style: TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              registerText(),
+              const SizedBox(height: 10),
+              const Text(
+                "Đăng ký để quản lý thời gian của bạn",
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                ),
               ),
-            ),
-            const SizedBox(
-              height: 50,
-            ),
-            fullNameField(context),
-            const SizedBox(
-              height: 20,
-            ),
-            emailField(context),
-            const SizedBox(
-              height: 20,
-            ),
-            passwordField(context),
-            const SizedBox(
-              height: 50,
-            ),
-            isLoading? const CircularProgressIndicator():
-            BasicAppButton(
-                onPressed: () {
-                  _signUp();
-                  // async {
-                  //   var result = await sl<SignupUseCase>().call(
-                  //       params: CreateUserReq(
-                  //         fullName: fullName.text.toString(),
-                  //         email: email.text.toString(),
-                  //         password: password.text.toString(),
-                  //       ));
-                  //   result.fold((l) {
-                  //     var snackbar = SnackBar(
-                  //       content: Text(l),
-                  //       behavior: SnackBarBehavior.floating,
-                  //     );
-                  //     ScaffoldMessenger.of(context).showSnackBar(snackbar);
-                  //   }, (r) {
-                  //     var snackbar = SnackBar(
-                  //       content: Text(r),
-                  //       behavior: SnackBarBehavior.floating,
-                  //     );
-                  //     ScaffoldMessenger.of(context).showSnackBar(snackbar);
-                  //     Navigator.pushAndRemoveUntil(
-                  //         context,
-                  //         MaterialPageRoute(builder: (BuildContext context) => SignInPage()), (route) => false
-                  //     );
-                  //   });
-                },
-                title: "Đăng Ký"),
-            const SizedBox(
-              height: 60,
-            ),
-            //sigInText(context)
-          ],
+              const SizedBox(height: 50),
+              fullNameField(context),
+              const SizedBox(height: 20),
+              emailField(context),
+              const SizedBox(height: 20),
+              passwordField(context),
+              const SizedBox(height: 20),
+              confirmPasswordField(context),
+              const SizedBox(height: 50),
+              isLoading
+                  ? const CircularProgressIndicator()
+                  : BasicAppButton(
+                onPressed: _signUp,
+                title: "Đăng Ký",
+              ),
+              const SizedBox(height: 60),
+            ],
+          ),
         ),
       ),
     );
@@ -175,19 +152,18 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   Widget fullNameField(BuildContext context) {
-    return TextField(
+    return TextFormField(
       controller: fullName,
       decoration: const InputDecoration(
-        hintText: "nhập tên tài khoản",
+        hintText: "Nhập tên tài khoản",
         labelText: "Tên tài khoản",
-        prefixIcon: const Icon(Icons.person, color: Colors.grey),
+        prefixIcon: Icon(Icons.person, color: Colors.grey),
         filled: true,
-        errorStyle: const TextStyle(color: Colors.redAccent),
-        //contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        errorStyle: TextStyle(color: Colors.redAccent),
         fillColor: Colors.white,
-      ).applyDefaults(Theme
-          .of(context)
-          .inputDecorationTheme),
+      ),
+      validator: (value) =>
+      value == null || value.isEmpty ? "Vui lòng nhập tên" : null,
     );
   }
 
@@ -196,12 +172,11 @@ class _SignupPageState extends State<SignupPage> {
       controller: email,
       keyboardType: TextInputType.emailAddress,
       decoration: const InputDecoration(
-        hintText: "nhập Email",
+        hintText: "Nhập Email",
         labelText: "Email",
-        prefixIcon: const Icon(Icons.email_outlined, color: Colors.grey),
+        prefixIcon: Icon(Icons.email_outlined, color: Colors.grey),
         filled: true,
-        errorStyle: const TextStyle(color: Colors.redAccent),
-        //contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        errorStyle: TextStyle(color: Colors.redAccent),
         fillColor: Colors.white,
       ),
       validator: validateEmail,
@@ -213,7 +188,7 @@ class _SignupPageState extends State<SignupPage> {
       controller: password,
       obscureText: !_isPasswordVisible,
       decoration: InputDecoration(
-        hintText: " Nhập mật khẩu",
+        hintText: "Nhập mật khẩu",
         labelText: 'Mật khẩu',
         prefixIcon: const Icon(Icons.lock_outline, color: Colors.grey),
         fillColor: Colors.white,
@@ -231,7 +206,38 @@ class _SignupPageState extends State<SignupPage> {
       ),
       validator: validatePassword,
     );
+  }
 
+  Widget confirmPasswordField(BuildContext context) {
+    return TextFormField(
+      controller: confirmPassword,
+      obscureText: !_isPasswordVisible,
+      decoration: InputDecoration(
+        hintText: "Nhập lại mật khẩu",
+        labelText: 'Xác nhận mật khẩu',
+        prefixIcon: const Icon(Icons.lock_outline, color: Colors.grey),
+        fillColor: Colors.white,
+        suffixIcon: IconButton(
+          icon: Icon(
+            _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+            color: Colors.grey,
+          ),
+          onPressed: () {
+            setState(() {
+              _isPasswordVisible = !_isPasswordVisible;
+            });
+          },
+        ),
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return "Vui lòng nhập lại mật khẩu";
+        } else if (value != password.text) {
+          return "Mật khẩu không khớp";
+        }
+        return null;
+      },
+    );
   }
 
   Widget signInText(BuildContext context) {
@@ -247,13 +253,28 @@ class _SignupPageState extends State<SignupPage> {
           TextButton(
             onPressed: () {
               Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                      builder: (BuildContext context) => LoginPage()));
+                context,
+                MaterialPageRoute(
+                  builder: (BuildContext context) => LoginPage(),
+                ),
+              );
             },
-            child: const Text('Đăng Nhập', style: TextStyle(color: AppColors.primary),),)
+            child: const Text(
+              'Đăng Nhập',
+              style: TextStyle(color: AppColors.primary),
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    fullName.dispose();
+    email.dispose();
+    password.dispose();
+    confirmPassword.dispose();
+    super.dispose();
   }
 }

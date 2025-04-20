@@ -1,7 +1,9 @@
+import 'package:en_time/views/pages/auth/login_page.dart';
 import 'package:en_time/views/widgets/app_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:en_time/components/colors.dart';
+import 'package:en_time/database/services/Auth_Service.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -10,6 +12,17 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   bool _notificationsEnabled = true;
+
+  void _logout() async {
+    await AuthService().signOut();
+    if (context.mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => LoginPage()),
+            (route) => false,
+      );
+    }
+  }
 
   Widget _buildSectionHeader(String title) {
     return Padding(
@@ -180,6 +193,22 @@ class _ProfilePageState extends State<ProfilePage> {
                       onTap: () {},
                     ),
                   ],
+                ),
+              ),
+
+              // 👉 Nút đăng xuất
+              SizedBox(height: 30),
+              Center(
+                child: TextButton.icon(
+                  onPressed: _logout,
+                  icon: Icon(Icons.logout, color: Colors.red),
+                  label: Text(
+                    "Đăng xuất",
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ),
             ],

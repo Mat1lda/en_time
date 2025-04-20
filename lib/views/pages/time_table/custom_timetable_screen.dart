@@ -59,70 +59,69 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          appBar: BasicAppbar(
-            backgroundColor: Colors.white,
-            hideBack: true,
-            title: Text('Lịch học', style: TextStyle(fontWeight: FontWeight.w700,),),
-          ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () {
-              _showAddMenu();
-            },
-            child: Icon(Icons.add),
-          ),
-          body: SafeArea(
-            child: SfCalendar(
-              dataSource: _dataSource,
-              view: _selectedView,
-              allowedViews: const [
-                CalendarView.day,
-                CalendarView.week,
-                CalendarView.workWeek,
-                CalendarView.month,
-                CalendarView.timelineDay,
-                CalendarView.timelineWeek,
-                CalendarView.timelineWorkWeek,
-                CalendarView.timelineMonth,
-                CalendarView.schedule
-              ],
-              minDate: DateTime(DateTime.now().year, 1, 1),
-              maxDate: DateTime(DateTime.now().year + 1, 12, 31),
-              headerHeight: 50,
-              viewHeaderHeight: 60,
-              firstDayOfWeek: 1,
-              timeSlotViewSettings: TimeSlotViewSettings(
-                startHour: 7,
-                endHour: 21,
-                timeFormat: 'HH:mm',
-                nonWorkingDays: <int>[DateTime.saturday, DateTime.sunday],
-                timeIntervalHeight: 60,
-                timeTextStyle: TextStyle(
-                  fontWeight: FontWeight.w500, 
-                  fontSize: 12,
-                  color: Colors.black.withOpacity(0.7)
-                ),
-                dayFormat: 'EEE',
-              ),
-              monthViewSettings: MonthViewSettings(
-                appointmentDisplayMode: MonthAppointmentDisplayMode.appointment,
-                showAgenda: true,
-              ),
-              todayHighlightColor: Theme.of(context).primaryColor,
-              cellBorderColor: Colors.grey.withOpacity(0.2),
-              onTap: _onCalendarTapped,
-              onLongPress: _onCalendarLongPressed,
-              specialRegions: _specialTimeRegion,
-              onViewChanged: viewChanged,
+    return Scaffold(
+      appBar: BasicAppbar(
+        backgroundColor: Colors.white,
+        hideBack: false, // hoặc bỏ dòng này nếu bạn dùng AppBar gốc
+        title: const Text(
+          'Lịch học',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          _showAddMenu();
+        },
+        child: const Icon(Icons.add),
+      ),
+      body: SafeArea(
+        child: SfCalendar(
+          dataSource: _dataSource,
+          view: _selectedView,
+          allowedViews: const [
+            CalendarView.day,
+            CalendarView.week,
+            CalendarView.workWeek,
+            CalendarView.month,
+            CalendarView.timelineDay,
+            CalendarView.timelineWeek,
+            CalendarView.timelineWorkWeek,
+            CalendarView.timelineMonth,
+            CalendarView.schedule
+          ],
+          minDate: DateTime(DateTime.now().year, 1, 1),
+          maxDate: DateTime(DateTime.now().year + 1, 12, 31),
+          headerHeight: 50,
+          viewHeaderHeight: 60,
+          firstDayOfWeek: 1,
+          timeSlotViewSettings: TimeSlotViewSettings(
+            startHour: 7,
+            endHour: 21,
+            timeFormat: 'HH:mm',
+            nonWorkingDays: <int>[DateTime.saturday, DateTime.sunday],
+            timeIntervalHeight: 60,
+            timeTextStyle: TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: 12,
+              color: Colors.black.withOpacity(0.7),
             ),
+            dayFormat: 'EEE',
           ),
+          monthViewSettings: MonthViewSettings(
+            appointmentDisplayMode: MonthAppointmentDisplayMode.appointment,
+            showAgenda: true,
+          ),
+          todayHighlightColor: Theme.of(context).primaryColor,
+          cellBorderColor: Colors.grey.withOpacity(0.2),
+          onTap: _onCalendarTapped,
+          onLongPress: _onCalendarLongPressed,
+          specialRegions: _specialTimeRegion,
+          onViewChanged: viewChanged,
         ),
       ),
     );
   }
+
 
   void viewChanged(ViewChangedDetails viewChangedDetails) {
     List<DateTime> visibleDates = viewChangedDetails.visibleDates;

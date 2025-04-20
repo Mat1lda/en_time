@@ -7,6 +7,37 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  Future<DocumentSnapshot?> getUserByEmail(String email) async {
+    try {
+      final normalizedEmail = email.trim().toLowerCase();
+      print("🔍 Tìm email: $normalizedEmail");
+
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: normalizedEmail)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        print("✅ Tìm thấy user: ${querySnapshot.docs.first.id}");
+        return querySnapshot.docs.first;
+      } else {
+        print("⚠️ Không tìm thấy user với email: $normalizedEmail");
+        return null;
+      }
+    } catch (e) {
+      print("❌ Lỗi khi tìm user theo email: $e");
+      return null;
+    }
+  }
+
+  Future<void> printAllUserEmails() async {
+    final querySnapshot = await FirebaseFirestore.instance.collection('users').get();
+    for (var doc in querySnapshot.docs) {
+      print("📧 User email: ${doc.get('email')}");
+    }
+  }
+
   // Đăng ký tài khoản và lưu vào Firestore
   Future<String?> signUpWithEmail(
       String fullName,
@@ -26,7 +57,7 @@ class AuthService {
         UserModel newUser = UserModel(
           uid: user.uid,
           fullName: fullName,
-          email: email,
+          email: email.trim().toLowerCase(), // 👈 Bắt buộc chuẩn hóa khi lưu
           createdAt: DateTime.now(),
         );
 
@@ -44,6 +75,7 @@ class AuthService {
       return "Có lỗi xảy ra. Vui lòng thử lại!";
     }
   }
+
 
   // Lấy thông tin user từ Firestore
   Future<UserModel?> getUserData(String uid) async {
