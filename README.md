@@ -1,16 +1,15 @@
 # en_time
 
-A new Flutter project.
+#càt đặt project
 
-## Getting Started
+Flutter SDK
 
-This project is a starting point for a Flutter application.
+Dart version 3.8 trở lên
 
-A few resources to get you started if this is your first Flutter project:
+git clone
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+mở project, vào terminal, chạy flutter pub get
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+nếu chưa cài đặt firebase CLI thì cài đi
+
+liên hệ để lấy file serviceAccount cho backend
