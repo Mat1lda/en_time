@@ -300,7 +300,7 @@ async function sendAlarmNotifications() {
   console.log("\n🎉 Tất cả alarm đã được xử lý.");
 }
 
- 📅 Chạy cron job mỗi phút
+
 cron.schedule("* * * * *", () => {
   console.log("🔁 Cron job chạy: kiểm tra notification");
   sendScheduledNotifications();
