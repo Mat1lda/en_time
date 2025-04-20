@@ -300,13 +300,13 @@ async function sendAlarmNotifications() {
   console.log("\n🎉 Tất cả alarm đã được xử lý.");
 }
 
-// 📅 Chạy cron job mỗi phút
-//cron.schedule("* * * * *", () => {
-//  console.log("🔁 Cron job chạy: kiểm tra notification");
-//  sendScheduledNotifications();
-//  sendScheduledDeadlineNotifications();
-//  sendAlarmNotifications();
-//});
+ 📅 Chạy cron job mỗi phút
+cron.schedule("* * * * *", () => {
+  console.log("🔁 Cron job chạy: kiểm tra notification");
+  sendScheduledNotifications();
+  sendScheduledDeadlineNotifications();
+  sendAlarmNotifications();
+});
 
 app.post("/send-email-password", async (req, res) => {
   const { email, password } = req.body;
