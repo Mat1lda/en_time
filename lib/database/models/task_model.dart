@@ -34,7 +34,6 @@ class TaskModel {
     };
   }
 
-  // Create TaskModel from Map (Firebase data)
   factory TaskModel.fromMap(Map<String, dynamic> map) {
     return TaskModel(
       id: map['id'] ?? '',
