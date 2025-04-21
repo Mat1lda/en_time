@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "187982513773",
+    "project_id": "entime-7d0c6",
+    "storage_bucket": "entime-7d0c6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:187982513773:android:c24dd96299c19c7309a164",
+        "android_client_info": {
+          "package_name": "com.example.en_time"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBu_2Lf9qF8YRVjQXpjqYZ8KzMpDnAx9LE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
