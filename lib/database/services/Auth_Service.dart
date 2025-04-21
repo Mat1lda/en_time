@@ -32,18 +32,17 @@ class AuthService {
   }
 
   Future<void> printAllUserEmails() async {
-    final querySnapshot = await FirebaseFirestore.instance.collection('users').get();
+    final querySnapshot = await FirebaseFirestore.instance.collection('users')
+        .get();
     for (var doc in querySnapshot.docs) {
       print("📧 User email: ${doc.get('email')}");
     }
   }
 
   // Đăng ký tài khoản và lưu vào Firestore
-  Future<String?> signUpWithEmail(
-      String fullName,
+  Future<String?> signUpWithEmail(String fullName,
       String email,
-      String password,
-      ) async {
+      String password,) async {
     try {
       UserCredential userCredential = await _auth
           .createUserWithEmailAndPassword(email: email, password: password);
@@ -116,4 +115,19 @@ class AuthService {
   Future<void> signOut() async {
     await _auth.signOut();
   }
+
+// Future<String?> _getDisplayName() async {
+//   final user = FirebaseAuth.instance.currentUser;
+//   return user?.displayName;
+// }
+
+  Future<String> _getCurrentUserName() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final userData = await AuthService().getUserData(user.uid);
+      return userData?.fullName ?? "Người dùng";
+    }
+    return "Khách";
+    }
+//
 }

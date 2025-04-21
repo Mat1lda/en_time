@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "firebase-tools": "^14.2.0",
     "luxon": "^3.6.1"
   }
 }
