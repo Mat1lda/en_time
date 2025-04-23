@@ -8,8 +8,10 @@ import 'package:en_time/views/pages/home/deadline_page.dart';
 import 'package:en_time/views/pages/note/note_page.dart';
 import 'package:en_time/views/pages/task_schedule/remind_task_view.dart';
 import 'package:en_time/views/pages/time_table/custom_timetable_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:en_time/database/services/Auth_Service.dart';
 
 import '../../../components/colors.dart';
 import '../../../database/models/task_model.dart';
@@ -27,6 +29,7 @@ class HomeView extends StatelessWidget {
     final TaskService taskService = TaskService();
     final AlarmService alarmService = AlarmService();
     final Size size = MediaQuery.of(context).size;
+    final AuthService authService = AuthService();
     
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -64,14 +67,39 @@ class HomeView extends StatelessWidget {
                           ),
                         ),
                         SizedBox(height: 4),
-                        //FutureBuilder(future: future, builder: builder)
-                        Text(
-                          "Matilda",
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                          ),
+                        // FutureBuilder(future: future, builder: builder)
+                        // Text(
+                        //   "Matilda",
+                        //   style: TextStyle(
+                        //     color: Colors.black,
+                        //     fontSize: 22,
+                        //     fontWeight: FontWeight.w700,
+                        //   ),
+                        // ),
+                        FutureBuilder<String>(
+                          future: authService.getCurrentUserName(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return Text(
+                                "Đang tải...",
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              );
+                            }
+
+                            final name = snapshot.data ?? "Người dùng";
+                            return Text(
+                              name,
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -823,3 +851,12 @@ class HomeView extends StatelessWidget {
     );
   }
 }
+
+// Future<String> _getCurrentUserName() async {
+//   final user = FirebaseAuth.instance.currentUser;
+//   if (user != null) {
+//     final userData = await AuthService().getUserData(user.uid);
+//     return userData?.fullName ?? "Người dùng";
+//   }
+//   return "Khách";
+// }
