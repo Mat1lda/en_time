@@ -121,7 +121,7 @@ class AuthService {
 //   return user?.displayName;
 // }
 
-  Future<String> _getCurrentUserName() async {
+  Future<String> getCurrentUserName() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final userData = await AuthService().getUserData(user.uid);

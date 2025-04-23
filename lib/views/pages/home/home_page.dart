@@ -29,6 +29,7 @@ class HomeView extends StatelessWidget {
     final TaskService taskService = TaskService();
     final AlarmService alarmService = AlarmService();
     final Size size = MediaQuery.of(context).size;
+    final AuthService authService = AuthService();
     
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -76,7 +77,7 @@ class HomeView extends StatelessWidget {
                         //   ),
                         // ),
                         FutureBuilder<String>(
-                          future: _getCurrentUserName(),
+                          future: authService.getCurrentUserName(),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState == ConnectionState.waiting) {
                               return Text(
@@ -851,11 +852,11 @@ class HomeView extends StatelessWidget {
   }
 }
 
-Future<String> _getCurrentUserName() async {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user != null) {
-    final userData = await AuthService().getUserData(user.uid);
-    return userData?.fullName ?? "Người dùng";
-  }
-  return "Khách";
-}
+// Future<String> _getCurrentUserName() async {
+//   final user = FirebaseAuth.instance.currentUser;
+//   if (user != null) {
+//     final userData = await AuthService().getUserData(user.uid);
+//     return userData?.fullName ?? "Người dùng";
+//   }
+//   return "Khách";
+// }
