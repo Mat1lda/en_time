@@ -47,4 +47,3 @@ app.*.map.json
 fcm-sender/serviceAccount.json
 fcm-sender/node_modules
 node_modules
-dev_lib
