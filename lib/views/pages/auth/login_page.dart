@@ -167,7 +167,6 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-
   Widget signInText() {
     return const Text(
       "Đăng nhập",
