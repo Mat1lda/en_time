@@ -155,6 +155,21 @@ class _RemindTaskViewState extends State<RemindTaskView> {
                     fontSize: 12,
                   ),
                 ),
+                SizedBox(height: 5),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: task.priority.getColor().withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    task.priority.toVietnamese(),
+                    style: TextStyle(
+                      color: task.priority.getColor(),
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

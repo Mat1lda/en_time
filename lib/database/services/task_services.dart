@@ -89,7 +89,7 @@ class TaskService {
           }).toList();
           
           // Filter tasks for the specific day
-          final filteredTasks = tasks.where((task) {
+          final filteredTasks = tasks.where((task)  {
             try {
               final taskDay = DateTime(task.day.year, task.day.month, task.day.day);
               return taskDay.isAtSameMomentAs(startOfDay);
@@ -202,5 +202,71 @@ class TaskService {
           
           return upcomingTasks;
         });
+  }
+
+  Stream<List<TaskModel>> getIncompletedTasks() {
+    return _tasksCollection
+        .where('userId', isEqualTo: currentUserId)
+        .where('isDone', isEqualTo: false)
+        .snapshots()
+        .map((snapshot) {
+          final tasks = snapshot.docs.map((doc) {
+            return TaskModel.fromMap({
+              'id': doc.id,
+              ...doc.data() as Map<String, dynamic>,
+            });
+          }).toList();
+          
+          // Sort tasks by day and time
+          tasks.sort((a, b) {
+            // First sort by day
+            final dayCompare = a.day.compareTo(b.day);
+            if (dayCompare != 0) return dayCompare;
+            // If days are equal, sort by time
+            return a.timeStart.compareTo(b.timeStart);
+          });
+          
+          return tasks;
+        });
+  }
+
+  // Get tasks by type
+  Stream<List<TaskModel>> getTasksByType(String taskType) {
+    return _tasksCollection
+        .where('userId', isEqualTo: currentUserId)
+        .where('taskType', isEqualTo: taskType)
+        .snapshots()
+        .map((snapshot) {
+          final tasks = snapshot.docs.map((doc) {
+            return TaskModel.fromMap({
+              'id': doc.id,
+              ...doc.data() as Map<String, dynamic>,
+            });
+          }).toList();
+          
+          // Sort tasks by day and time
+          tasks.sort((a, b) {
+            // First sort by day
+            final dayCompare = a.day.compareTo(b.day);
+            if (dayCompare != 0) return dayCompare;
+            
+            // If days are equal, sort by time
+            try {
+              final aTime = DateFormat('hh:mm a').parse(a.timeStart);
+              final bTime = DateFormat('hh:mm a').parse(b.timeStart);
+              return aTime.compareTo(bTime);
+            } catch (e) {
+              print('Error comparing times: $e');
+              return 0;
+            }
+          });
+          
+          return tasks;
+        });
+  }
+
+  // Get task counts by type
+  Stream<int> getTaskCountByType(String taskType) {
+    return getTasksByType(taskType).map((tasks) => tasks.length);
   }
 }

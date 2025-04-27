@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:en_time/database/services/Auth_Service.dart';
+import 'package:en_time/views/widgets/app_bar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +11,8 @@ import '../../../components/colors.dart';
 import '../../widgets/basic_app_buttons.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
+  const ForgotPasswordPage({super.key});
+
   @override
   State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
@@ -88,7 +91,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Quên mật khẩu")),
+      appBar: BasicAppbar(
+        title: Text("Đổi mật khẩu", style: TextStyle(fontWeight: FontWeight.w700),),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(

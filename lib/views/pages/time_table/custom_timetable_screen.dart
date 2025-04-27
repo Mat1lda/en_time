@@ -10,19 +10,21 @@ import 'package:en_time/database/models/subject_model.dart';
 import 'package:en_time/database/models/deadline_model.dart';
 import 'package:en_time/database/services/subject_services.dart';
 import 'package:en_time/database/services/deadline_services.dart';
+import '../../../database/services/calendar_services.dart';
 
-class CustomTimetableScreem extends StatefulWidget{
+class CustomTimetableScreem extends StatefulWidget {
   @override
   State<CustomTimetableScreem> createState() => _CustomTimetableScreemState();
 }
 
 class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
   final CalendarDataSource _dataSource = _DataSource(<Appointment>[]);
-  final List<Color> _colorCollection = <Color>[]; 
+  final List<Color> _colorCollection = <Color>[];
   List<TimeRegion> _specialTimeRegion = <TimeRegion>[];
-  CalendarView _selectedView = CalendarView.week; 
+  CalendarView _selectedView = CalendarView.week;
   final SubjectService _subjectService = SubjectService();
   final DeadlineService _deadlineService = DeadlineService();
+  //final CalendarService _calendarService = CalendarService();
 
   @override
   void initState() {
@@ -30,26 +32,21 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
     _loadAppointments();
     super.initState();
   }
+
   void _loadAppointments() {
     print("Loading appointments...");
     _subjectService.getAllSubjects().listen((subjects) {
       print("Loaded ${subjects.length} subjects");
-      final subjectAppointments = subjects.map((subject) {
-        try {
-          return subject.toAppointment();
-        } catch (e) {
-          print("Error converting subject to appointment: $e");
-          print("Subject data: ${subject.toMap()}");
-          return null;
-        }
-      }).where((appointment) => appointment != null).cast<Appointment>().toList();
-      
-      // Only use subject appointments, ignore deadlines
-      print("Total appointments: ${subjectAppointments.length}");
-      
+      List<Appointment> allAppointments = [];
+
+      // Convert each subject to its recurring appointments
+      for (var subject in subjects) {
+        allAppointments.addAll(subject.toAppointments());
+      }
+
       setState(() {
         _dataSource.appointments!.clear();
-        _dataSource.appointments!.addAll(subjectAppointments);
+        _dataSource.appointments!.addAll(allAppointments);
         _dataSource.notifyListeners(CalendarDataSourceAction.reset, _dataSource.appointments!);
       });
     }, onError: (error) {
@@ -60,13 +57,18 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: BasicAppbar(
+      appBar: AppBar(
         backgroundColor: Colors.white,
-        hideBack: false, // hoặc bỏ dòng này nếu bạn dùng AppBar gốc
         title: const Text(
           'Lịch học',
-          style: TextStyle(fontWeight: FontWeight.w700),
+          style: TextStyle(fontWeight: FontWeight.w700), textAlign: TextAlign.center,
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.file_download),
+            onPressed: () => _exportToExcel(),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -122,11 +124,10 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
     );
   }
 
-
   void viewChanged(ViewChangedDetails viewChangedDetails) {
     List<DateTime> visibleDates = viewChangedDetails.visibleDates;
     List<TimeRegion> timeRegion = <TimeRegion>[];
-    
+
     for (int i = 0; i < visibleDates.length; i++) {
       if (visibleDates[i].weekday == 7) {
         continue;
@@ -140,7 +141,7 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
           color: Colors.grey.withOpacity(0.1),
           enablePointerInteraction: false));
     }
-    
+
     SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
       setState(() {
         _specialTimeRegion = timeRegion;
@@ -174,124 +175,203 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
     Color selectedColor = isEdit ? appointment!.color : _colorCollection[Random().nextInt(_colorCollection.length)];
     DateTime startTime = isEdit ? appointment!.startTime : selectedDate ?? DateTime.now();
     DateTime endTime = isEdit ? appointment!.endTime : (selectedDate ?? DateTime.now()).add(Duration(hours: 1));
+    DateTime rangeStart = isEdit ? startTime : DateTime.now();
+    DateTime rangeEnd = isEdit ? startTime.add(Duration(days: 7)) : DateTime.now().add(Duration(days: 7));
+    List<bool> selectedDays = List.generate(7, (index) => false);
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        title: Text(isEdit ? 'Chỉnh sửa lịch môn học' : 'Thêm lịch môn học', textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700), ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: subjectController,
-              decoration: InputDecoration(labelText: 'Tiêu đề'),
-            ),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () async {
-                DateTime? pickedDate = await showDatePicker(
-                  context: context,
-                  initialDate: startTime,
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime(2100),
-                );
-                if (pickedDate != null) {
-                  setState(() {
-                    startTime = DateTime(pickedDate.year, pickedDate.month, pickedDate.day, startTime.hour, startTime.minute);
-                    endTime = startTime.add(Duration(hours: 1));
-                  });
-                }
-              },
-              child: Text('Chọn ngày'),
-            ),
-            Row(
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          backgroundColor: Colors.white,
+          title: Text(
+            isEdit ? 'Chỉnh sửa lịch môn học' : 'Thêm lịch môn học',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      TimeOfDay? pickedTime = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay.fromDateTime(startTime),
-                      );
-                      if (pickedTime != null) {
-                        setState(() {
-                          startTime = DateTime(startTime.year, startTime.month, startTime.day, pickedTime.hour, pickedTime.minute);
-                          endTime = startTime.add(Duration(hours: 1));
-                        });
-                      }
-                    },
-                    child: Text('Bắt đầu: ${TimeOfDay.fromDateTime(startTime).format(context)}'),
-                  ),
+                TextField(
+                  controller: subjectController,
+                  decoration: InputDecoration(labelText: 'Tiêu đề'),
                 ),
-                SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      TimeOfDay? pickedTime = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay.fromDateTime(endTime),
-                      );
-                      if (pickedTime != null) {
-                        setState(() {
-                          endTime = DateTime(startTime.year, startTime.month, startTime.day, pickedTime.hour, pickedTime.minute);
-                        });
-                      }
-                    },
-                    child: Text('Kết thúc: ${TimeOfDay.fromDateTime(endTime).format(context)}'),
-                  ),
+                SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          final DateTimeRange? picked = await showDateRangePicker(
+                            context: context,
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime(2100), //hạn chế chọn đến năm 2100 :))
+                            initialDateRange: DateTimeRange(
+                              start: rangeStart,
+                              end: rangeEnd,
+                            ),
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              rangeStart = picked.start;
+                              rangeEnd = picked.end;
+                            });
+                          }
+                        },
+                        child: Text('Chọn khoảng thời gian'),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16),
+                Text('Chọn các ngày trong tuần:'),
+                SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (int i = 0; i < 7; i++)
+                      FilterChip(
+                        label: Text(['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'][i]),
+                        selected: selectedDays[i],
+                        onSelected: (bool selected) {
+                          setState(() {
+                            selectedDays[i] = selected;
+                          });
+                        },
+                      ),
+                  ],
+                ),
+                SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          TimeOfDay? pickedTime = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.fromDateTime(startTime),
+                          );
+                          if (pickedTime != null) {
+                            setState(() {
+                              startTime = DateTime(
+                                startTime.year,
+                                startTime.month,
+                                startTime.day,
+                                pickedTime.hour,
+                                pickedTime.minute,
+                              );
+                              endTime = startTime.add(Duration(hours: 1));
+                            });
+                          }
+                        },
+                        child: Text('Bắt đầu: ${TimeOfDay.fromDateTime(startTime).format(context)}'),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          TimeOfDay? pickedTime = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.fromDateTime(endTime),
+                          );
+                          if (pickedTime != null) {
+                            setState(() {
+                              endTime = DateTime(
+                                endTime.year,
+                                endTime.month,
+                                endTime.day,
+                                pickedTime.hour,
+                                pickedTime.minute,
+                              );
+                            });
+                          }
+                        },
+                        child: Text('Kết thúc: ${TimeOfDay.fromDateTime(endTime).format(context)}'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Hủy'),
           ),
-          TextButton(
-            onPressed: () {
-              if (subjectController.text.isEmpty) return;
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Hủy'),
+            ),
+            if (isEdit)
+              TextButton(
+                onPressed: () {
+                  // Convert selected days to weekday numbers (1-7)
+                  List<int> weekdays = [];
+                  for (int i = 0; i < 7; i++) {
+                    if (selectedDays[i]) {
+                      weekdays.add(i + 1); // Adding 1 because weekdays are 1-7
+                    }
+                  }
 
-              if (isEdit && appointment != null) {
-                String appointmentId = appointment.id.toString();
-                // Check if it's a subject (no notes field or notes is not 'deadline')
-                if (appointment.notes == null || appointment.notes != 'deadline') {
-                  // Update subject in Firebase
-                  SubjectModel updatedSubject = SubjectModel(
-                    id: appointmentId,
-                    day: DateTime(startTime.year, startTime.month, startTime.day),
+                  SubjectModel subject = SubjectModel(
+                    id: appointment!.id.toString(),
+                    rangeStart: rangeStart,
+                    rangeEnd: rangeEnd,
                     timeStart: startTime,
                     timeEnd: endTime,
                     subject: subjectController.text,
                     subjectColor: selectedColor,
+                    weekdays: weekdays,
                   );
-                  _subjectService.updateSubject(updatedSubject).then((_) {
-                    // Reload appointments after update
-                    _loadAppointments();
-                  });
+                  Navigator.pop(context);
+                  //_showExportDialog(subject);
+                },
+                child: Text('Xuất lịch'),
+              ),
+            TextButton(
+              onPressed: () {
+                if (subjectController.text.isEmpty) return;
+
+                // Convert selected days to weekday numbers (1-7)
+                List<int> weekdays = [];
+                for (int i = 0; i < 7; i++) {
+                  if (selectedDays[i]) {
+                    weekdays.add(i + 1); // Adding 1 because weekdays are 1-7
+                  }
                 }
-              } else {
-                // Add new subject to Firebase
-                SubjectModel newSubject = SubjectModel(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  day: DateTime(startTime.year, startTime.month, startTime.day),
+
+                if (weekdays.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Vui lòng chọn ít nhất một ngày trong tuần')),
+                  );
+                  return;
+                }
+
+                SubjectModel subject = SubjectModel(
+                  id: isEdit ? appointment!.id.toString() : DateTime.now().millisecondsSinceEpoch.toString(),
+                  rangeStart: rangeStart,
+                  rangeEnd: rangeEnd,
                   timeStart: startTime,
                   timeEnd: endTime,
                   subject: subjectController.text,
                   subjectColor: selectedColor,
+                  weekdays: weekdays,
                 );
-                _subjectService.addSubject(newSubject).then((_) {
-                  // Reload appointments after add
-                  _loadAppointments();
-                });
-              }
-              Navigator.pop(context);
-            },
-            child: Text(isEdit ? 'Lưu' : 'Thêm'),
-          ),
-        ],
+
+                if (isEdit) {
+                  _subjectService.updateSubject(subject).then((_) {
+                    _loadAppointments();
+                  });
+                } else {
+                  _subjectService.addSubject(subject).then((_) {
+                    _loadAppointments();
+                  });
+                }
+                Navigator.pop(context);
+              },
+              child: Text(isEdit ? 'Lưu' : 'Thêm'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -301,7 +381,11 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        title: Text('Xác nhận xóa', textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),),
+        title: Text(
+          'Xác nhận xóa',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+        ),
         content: Text('Bạn có chắc muốn xóa lịch môn học "${appointment.subject}" không?'),
         actions: [
           TextButton(
@@ -311,7 +395,7 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
           TextButton(
             onPressed: () {
               String appointmentId = appointment.id.toString();
-              
+
               // Check if it's a deadline or subject
               if (appointment.notes == 'deadline') {
                 _deadlineService.deleteDeadline(appointmentId).then((_) {
@@ -324,7 +408,7 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
                   _loadAppointments();
                 });
               }
-              
+
               Navigator.pop(context);
             },
             child: Text('Xóa', style: TextStyle(color: Colors.red)),
@@ -339,7 +423,7 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
     List<String> parts = appointment.subject.split(' - ');
     String subject = parts[0];
     String deadlineName = parts.length > 1 ? parts[1] : '';
-    
+
     TextEditingController subjectController = TextEditingController(text: subject);
     TextEditingController deadlineController = TextEditingController(text: deadlineName);
     DateTime selectedDate = appointment.startTime;
@@ -349,24 +433,21 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        title: Text('Chỉnh sửa Deadline', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),),
+        title: Text(
+          'Chỉnh sửa Deadline',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: subjectController,
-              decoration: InputDecoration(
-                labelText: 'Tên môn học',
-                hintText: "Nhập tên môn học"
-              ),
+              decoration: InputDecoration(labelText: 'Tên môn học', hintText: "Nhập tên môn học"),
             ),
             SizedBox(height: 16),
             TextField(
               controller: deadlineController,
-              decoration: InputDecoration(
-                labelText: 'Tên deadline',
-                hintText: 'Nhập tên deadline'
-              ),
+              decoration: InputDecoration(labelText: 'Tên deadline', hintText: 'Nhập tên deadline'),
             ),
             SizedBox(height: 16),
             ElevatedButton(
@@ -384,7 +465,7 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
                       pickedDate.month,
                       pickedDate.day,
                       selectedDate.hour,
-                      selectedDate.minute
+                      selectedDate.minute,
                     );
                   });
                 }
@@ -438,7 +519,7 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
                 deadlineName: deadlineController.text,
                 deadlineColor: selectedColor,
               );
-              
+
               _deadlineService.updateDeadline(updatedDeadline).then((_) {
                 // Reload appointments after update
                 _loadAppointments();
@@ -462,7 +543,11 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        title: Text('Thêm Deadline', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18), textAlign: TextAlign.center,),
+        title: Text(
+          'Thêm Deadline',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+          textAlign: TextAlign.center,
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -520,11 +605,11 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
                 if (pickedDate != null) {
                   setState(() {
                     selectedDate = DateTime(
-                        pickedDate.year,
-                        pickedDate.month,
-                        pickedDate.day,
-                        selectedDate.hour,
-                        selectedDate.minute
+                      pickedDate.year,
+                      pickedDate.month,
+                      pickedDate.day,
+                      selectedDate.hour,
+                      selectedDate.minute,
                     );
                   });
                 }
@@ -634,6 +719,86 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
     _colorCollection.add(const Color(0xFFE47C73));
     _colorCollection.add(const Color(0xFF636363));
     _colorCollection.add(const Color(0xFF0A8043));
+  }
+
+  // void _showExportDialog(SubjectModel subject) {
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) => AlertDialog(
+  //       title: Text('Xuất lịch'),
+  //       content: Text('Bạn muốn xuất "${subject.subject}" sang ứng dụng Lịch?'),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(context),
+  //           child: Text('Hủy'),
+  //         ),
+  //         TextButton(
+  //           onPressed: () async {
+  //             Navigator.pop(context);
+  //             try {
+  //               await _calendarService.exportSubjectToCalendar(subject);
+  //               ScaffoldMessenger.of(context).showSnackBar(
+  //                 SnackBar(content: Text('Đã xuất lịch thành công')),
+  //               );
+  //             } catch (e) {
+  //               ScaffoldMessenger.of(context).showSnackBar(
+  //                 SnackBar(content: Text('Lỗi: ${e.toString()}')),
+  //               );
+  //             }
+  //           },
+  //           child: Text('Xuất'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
+  void _exportToExcel() async {
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // Get all subjects
+      final subjects = await _subjectService.getAllSubjects().first;
+
+      // Export to Excel
+      final filePath = await _subjectService.exportTimetableToExcel(subjects);
+
+      // Hide loading dialog
+      Navigator.pop(context);
+
+      // Show success message with file location
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Đã xuất thời khóa biểu thành công'),
+          Text('Lưu tại: $filePath', style: TextStyle(fontSize: 12)),
+            ],
+          ),
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'OK',
+            onPressed: () {},
+          ),
+        ),
+      );
+      Text('Lưu tại: $filePath', style: TextStyle(fontSize: 12));
+    } catch (e) {
+      // Hide loading dialog if error occurs
+      Navigator.pop(context);
+
+      // Show error message
+      print(Text('Lỗi khi xuất file: ${e.toString()}'));
+    }
   }
 }
 

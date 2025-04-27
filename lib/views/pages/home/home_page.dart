@@ -18,6 +18,7 @@ import '../../../database/models/task_model.dart';
 import '../../../database/services/task_services.dart';
 import '../../widgets/completed_task_card.dart';
 import '../task_schedule/completed_task_view.dart';
+import '../task_schedule/incomplete_tasks_view.dart';
 import '../task_schedule/task_schedule_view.dart';
 import 'noti_page.dart';
 import 'package:intl/intl.dart';
@@ -179,7 +180,7 @@ class HomeView extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                "3 MÔN HỌC SẮP TỚI",
+                                "MÔN HỌC SẮP TỚI",
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
@@ -232,33 +233,6 @@ class HomeView extends StatelessWidget {
                                         );
                                       }).toList(),
                                       const SizedBox(height: 8),
-                                      GestureDetector(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => CustomTimetableScreem(),
-                                            ),
-                                          );
-                                        },
-                                        child: Container(
-                                          width: 120, // ← Bạn bảo 40 nhưng 40 hơi bé, mình để 80 cho vừa chữ, có thể chỉnh lại
-                                          height: 40, // ← Tương tự, chỉnh từ 20 lên 28 cho đẹp
-                                          alignment: Alignment.center,
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(6),
-                                          ),
-                                          child: Text(
-                                            "Xem lịch học",
-                                            style: TextStyle(
-                                              color: Colors.blueAccent, // Xanh nước biển
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
                                     ],
                                   );
                                 },
@@ -267,6 +241,33 @@ class HomeView extends StatelessWidget {
                           ),
                         ),
                       ],
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CustomTimetableScreem(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 110, // ← Bạn bảo 40 nhưng 40 hơi bé, mình để 80 cho vừa chữ, có thể chỉnh lại
+                        height: 40, // ← Tương tự, chỉnh từ 20 lên 28 cho đẹp
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          "Xem lịch học",
+                          style: TextStyle(
+                            color: Colors.blueAccent, // Xanh nước biển
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -547,111 +548,116 @@ class HomeView extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: 25),
-                    Container(
-                      padding: EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            spreadRadius: 1,
-                            blurRadius: 5,
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                "Tiến độ công việc",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryColor1.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  "7 ngày gần nhất",
+                    GestureDetector(
+                      onTap: (){
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => IncompleteTasksView(),));
+                      },
+                      child: Container(
+                        padding: EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              spreadRadius: 1,
+                              blurRadius: 5,
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  "Tiến độ công việc",
                                   style: TextStyle(
-                                    color: AppColors.primaryColor1,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 15),
-                          StreamBuilder<List<TaskModel>>(
-                            stream: taskService.getAllTasks(),
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState == ConnectionState.waiting) {
-                                return Center(child: CircularProgressIndicator());
-                              }
-                              
-                              final allTasks = snapshot.data ?? [];
-                              final completedCount = allTasks.where((task) => task.isDone).length;
-                              final totalCount = allTasks.length;
-                              final progress = totalCount > 0 ? completedCount / totalCount : 0.0;
-                              
-                              return Column(
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        "Đã hoàn thành",
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                      Text(
-                                        "$completedCount/$totalCount nhiệm vụ",
-                                        style: TextStyle(
-                                          color: Colors.black,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 10),
-                                  ClipRRect(
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryColor1.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(10),
-                                    child: LinearProgressIndicator(
-                                      value: progress,
-                                      minHeight: 8,
-                                      backgroundColor: Colors.grey[200],
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        AppColors.primaryColor1,
+                                  ),
+                                  child: Text(
+                                    "7 ngày gần nhất",
+                                    style: TextStyle(
+                                      color: AppColors.primaryColor1,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 15),
+                            StreamBuilder<List<TaskModel>>(
+                              stream: taskService.getAllTasks(),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState == ConnectionState.waiting) {
+                                  return Center(child: CircularProgressIndicator());
+                                }
+
+                                final allTasks = snapshot.data ?? [];
+                                final completedCount = allTasks.where((task) => task.isDone).length;
+                                final totalCount = allTasks.length;
+                                final progress = totalCount > 0 ? completedCount / totalCount : 0.0;
+
+                                return Column(
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          "Đã hoàn thành",
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        Text(
+                                          "$completedCount/$totalCount nhiệm vụ",
+                                          style: TextStyle(
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 10),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: LinearProgressIndicator(
+                                        value: progress,
+                                        minHeight: 8,
+                                        backgroundColor: Colors.grey[200],
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          AppColors.primaryColor1,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  SizedBox(height: 15),
-                                  Text(
-                                    progress >= 1.0
-                                        ? "Tuyệt vời! Bạn đã hoàn thành tất cả nhiệm vụ."
-                                        : "Tiếp tục nỗ lực để hoàn thành các nhiệm vụ.",
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 12,
+                                    SizedBox(height: 15),
+                                    Text(
+                                      progress >= 1.0
+                                          ? "Tuyệt vời! Bạn đã hoàn thành tất cả nhiệm vụ."
+                                          : "Tiếp tục nỗ lực để hoàn thành các nhiệm vụ.",
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 12,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ],
+                                  ],
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     SizedBox(height: 25),

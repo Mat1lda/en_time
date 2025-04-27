@@ -23,7 +23,9 @@ class _AddScheduleViewState extends State<AddScheduleView> {
   final TextEditingController _detailController = TextEditingController();
   bool _isPersonal = true;
   bool _isExtra = false;
+  TaskPriority _selectedPriority = TaskPriority.medium;
   final TaskService _taskService = TaskService();
+
 
   @override
   Widget build(BuildContext context) {
@@ -109,6 +111,8 @@ class _AddScheduleViewState extends State<AddScheduleView> {
               ),
             ),
             const SizedBox(height: 20),
+            _buildPrioritySelector(),
+            const SizedBox(height: 20),
             Text(
               "Chi tiết công việc",
               style: TextStyle(
@@ -176,6 +180,7 @@ class _AddScheduleViewState extends State<AddScheduleView> {
                   content: _detailController.text,
                   isDone: false,
                   taskType: taskType,
+                  priority: _selectedPriority,
                   userId: _taskService.currentUserId,
                 );
 
@@ -193,6 +198,60 @@ class _AddScheduleViewState extends State<AddScheduleView> {
           ],
         ),
       ),
+    );
+  }
+  Widget _buildPrioritySelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Mức độ ưu tiên",
+          style: TextStyle(
+            color: AppColors.black,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: DropdownButton<TaskPriority>(
+            value: _selectedPriority,
+            isExpanded: true,
+            underline: SizedBox(),
+            onChanged: (TaskPriority? newValue) {
+              if (newValue != null) {
+                setState(() {
+                  _selectedPriority = newValue;
+                });
+              }
+            },
+            items: TaskPriority.values.map((TaskPriority priority) {
+              return DropdownMenuItem<TaskPriority>(
+                value: priority,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: priority.getColor(),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Text(priority.toVietnamese()),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
     );
   }
 }
