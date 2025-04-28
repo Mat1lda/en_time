@@ -1,5 +1,6 @@
 import 'package:en_time/firebase_api.dart';
 import 'package:en_time/views/pages/auth/login_page.dart';
+import 'package:en_time/views/pages/profile_page/edit_profile_page.dart';
 import 'package:en_time/views/pages/splash_page/splash_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -50,7 +51,7 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: Apptheme.lightTheme,
         home: const SplashPage()
-        // home: ForgotPasswordPage()
+        // home: EditProfilePage()
     );
   }
 }

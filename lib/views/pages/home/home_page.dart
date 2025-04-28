@@ -76,8 +76,8 @@ class HomeView extends StatelessWidget {
                         //     fontWeight: FontWeight.w700,
                         //   ),
                         // ),
-                        FutureBuilder<String>(
-                          future: authService.getCurrentUserName(),
+                        StreamBuilder<String>(
+                          stream: authService.getCurrentUserName(),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState == ConnectionState.waiting) {
                               return Text(
