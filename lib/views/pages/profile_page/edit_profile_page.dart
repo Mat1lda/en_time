@@ -627,7 +627,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ? FileImage(_newAvatarFile!) // Hiển thị ảnh mới đã chọn
               : _currentAvatarUrl != null && _currentAvatarUrl!.isNotEmpty
               ? NetworkImage(_currentAvatarUrl!) as ImageProvider
-              : const AssetImage('assets/default_avatar.png'), // Hiển thị avatar cũ từ Firestore
+              : const AssetImage('assets/images/ArrowLeft.png'), // Hiển thị avatar cũ từ Firestore
           child: _newAvatarFile == null && _currentAvatarUrl == null
               ? const Icon(Icons.person, size: 60, color: Colors.white)
               : null,
