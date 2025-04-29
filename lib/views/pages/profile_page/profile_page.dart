@@ -1,6 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:en_time/views/pages/auth/login_page.dart';
 import 'package:en_time/views/pages/profile_page/privacy_policy_page.dart';
 import 'package:en_time/views/widgets/app_bar.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:en_time/components/colors.dart';
@@ -89,9 +91,35 @@ class _ProfilePageState extends State<ProfilePage> {
                 padding: EdgeInsets.all(20),
                 child: Row(
                   children: [
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundImage: AssetImage('assets/images/avatar.png'),
+                    // CircleAvatar(
+                    //   radius: 30,
+                    //   backgroundImage: AssetImage('assets/images/avatar.png'),
+                    // ),
+                    StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(FirebaseAuth.instance.currentUser!.uid)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return const CircleAvatar(radius: 60, backgroundColor: Colors.grey);
+                        }
+                        var userData = snapshot.data!.data() as Map<String, dynamic>;
+                        String? avatarUrl = userData['avatarUrl'];
+
+                        if (avatarUrl != null && avatarUrl.isNotEmpty) {
+                          return CircleAvatar(
+                            radius: 40,
+                            backgroundImage: NetworkImage(avatarUrl),
+                          );
+                        } else {
+                          return const CircleAvatar(
+                            radius: 40,
+                            backgroundColor: Colors.grey,
+                            child: Icon(Icons.person, size: 60, color: Colors.white),
+                          );
+                        }
+                      },
                     ),
                     SizedBox(width: 15),
                     Expanded(
