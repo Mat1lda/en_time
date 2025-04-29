@@ -1,17 +1,26 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:en_time/views/pages/auth/login_page.dart';
+import 'package:en_time/views/pages/profile_page/privacy_policy_page.dart';
 import 'package:en_time/views/widgets/app_bar.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:en_time/components/colors.dart';
 import 'package:en_time/database/services/Auth_Service.dart';
 
+import 'change_password_page.dart';
+import 'contact_page.dart';
+import 'edit_profile_page.dart';
+
 class ProfilePage extends StatefulWidget {
+
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
   bool _notificationsEnabled = true;
+  final AuthService authService = AuthService();
 
   void _logout() async {
     await AuthService().signOut();
@@ -82,21 +91,72 @@ class _ProfilePageState extends State<ProfilePage> {
                 padding: EdgeInsets.all(20),
                 child: Row(
                   children: [
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundImage: AssetImage('assets/images/avatar.png'),
+                    // CircleAvatar(
+                    //   radius: 30,
+                    //   backgroundImage: AssetImage('assets/images/avatar.png'),
+                    // ),
+                    StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(FirebaseAuth.instance.currentUser!.uid)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return const CircleAvatar(radius: 60, backgroundColor: Colors.grey);
+                        }
+                        var userData = snapshot.data!.data() as Map<String, dynamic>;
+                        String? avatarUrl = userData['avatarUrl'];
+
+                        if (avatarUrl != null && avatarUrl.isNotEmpty) {
+                          return CircleAvatar(
+                            radius: 40,
+                            backgroundImage: NetworkImage(avatarUrl),
+                          );
+                        } else {
+                          return const CircleAvatar(
+                            radius: 40,
+                            backgroundColor: Colors.grey,
+                            child: Icon(Icons.person, size: 60, color: Colors.white),
+                          );
+                        }
+                      },
                     ),
                     SizedBox(width: 15),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'matilda',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w500,
-                            ),
+                          // Text(
+                          //   'matilda',
+                          //   style: TextStyle(
+                          //     fontSize: 18,
+                          //     fontWeight: FontWeight.w500,
+                          //   ),
+                          // ),
+                          StreamBuilder<String>(
+                            stream: authService.getCurrentUserName(),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                return Text(
+                                  "Đang tải...",
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                );
+                              }
+
+                              final name = snapshot.data ?? "Người dùng";
+                              return Text(
+                                name,
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -107,7 +167,12 @@ class _ProfilePageState extends State<ProfilePage> {
                         color: Color(0xFF92A3FD).withOpacity(0.6),
                       ),
                       child: TextButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const EditProfilePage()),
+                          );
+                        },
                         child: Text(
                           'Chỉnh sửa',
                           style: TextStyle(color: Colors.white, fontSize: 12),
@@ -128,47 +193,57 @@ class _ProfilePageState extends State<ProfilePage> {
                     _buildListTile(
                       icon: Icons.person_outline,
                       title: 'Thông tin cá nhân',
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const EditProfilePage()),
+                        );
+                      },
                     ),
                     _buildListTile(
                       icon: Icons.history,
-                      title: 'Lịch sử hoạt động',
-                      onTap: () {},
+                      title: 'Đổi mật khẩu',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const ChangePasswordPage()),
+                        );
+                      },
                     ),
-                    _buildListTile(
-                      icon: Icons.language,
-                      title: 'Ngôn ngữ',
-                      onTap: () {},
-                    ),
-                    _buildListTile(
-                      icon: Icons.remove_red_eye_outlined,
-                      title: 'Chế độ giao diện',
-                      onTap: () {},
-                    ),
+                    // _buildListTile(
+                    //   icon: Icons.language,
+                    //   title: 'Ngôn ngữ',
+                    //   onTap: () {},
+                    // ),
+                    // _buildListTile(
+                    //   icon: Icons.remove_red_eye_outlined,
+                    //   title: 'Chế độ giao diện',
+                    //   onTap: () {},
+                    // ),
                   ],
                 ),
               ),
-              _buildSectionHeader('Thông báo'),
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: Colors.white,
-                ),
-                child: _buildListTile(
-                  icon: Icons.notifications_none,
-                  title: 'Bật thông báo',
-                  trailing: Switch(
-                    value: _notificationsEnabled,
-                    onChanged: (value) {
-                      setState(() {
-                        _notificationsEnabled = value;
-                      });
-                    },
-                    activeColor: AppColors.secondaryColor1,
-                    activeTrackColor: AppColors.secondaryColor1.withOpacity(0.5),
-                  ),
-                ),
-              ),
+              // _buildSectionHeader('Thông báo'),
+              // Container(
+              //   decoration: BoxDecoration(
+              //     borderRadius: BorderRadius.circular(20),
+              //     color: Colors.white,
+              //   ),
+              //   child: _buildListTile(
+              //     icon: Icons.notifications_none,
+              //     title: 'Bật thông báo',
+              //     trailing: Switch(
+              //       value: _notificationsEnabled,
+              //       onChanged: (value) {
+              //         setState(() {
+              //           _notificationsEnabled = value;
+              //         });
+              //       },
+              //       activeColor: AppColors.secondaryColor1,
+              //       activeTrackColor: AppColors.secondaryColor1.withOpacity(0.5),
+              //     ),
+              //   ),
+              // ),
               _buildSectionHeader('Khác'),
               Container(
                 decoration: BoxDecoration(
@@ -180,18 +255,28 @@ class _ProfilePageState extends State<ProfilePage> {
                     _buildListTile(
                       icon: Icons.mail_outline,
                       title: 'Liên hệ',
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const ContactPage()),
+                        );
+                      },
                     ),
                     _buildListTile(
                       icon: Icons.security,
                       title: 'Chính sách bảo mật',
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const PrivacyPolicyPage()),
+                        );
+                      },
                     ),
-                    _buildListTile(
-                      icon: Icons.settings,
-                      title: 'Cài đặt',
-                      onTap: () {},
-                    ),
+                    // _buildListTile(
+                    //   icon: Icons.settings,
+                    //   title: 'Cài đặt',
+                    //   onTap: () {},
+                    // ),
                   ],
                 ),
               ),

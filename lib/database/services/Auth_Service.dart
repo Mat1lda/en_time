@@ -121,13 +121,67 @@ class AuthService {
 //   return user?.displayName;
 // }
 
-  Future<String> getCurrentUserName() async {
-    final user = FirebaseAuth.instance.currentUser;
+//   Future<Stream<String>> getCurrentUserName() async {
+//     final user = FirebaseAuth.instance.currentUser;
+//     if (user != null) {
+//       final userData = await AuthService().getUserData(user.uid);
+//       return userData?.fullName ?? "Người dùng";
+//     }
+//     return "Khách";
+//     }
+// //
+// }
+
+  Stream<String> getCurrentUserName() {
+    final user = _auth.currentUser;
     if (user != null) {
-      final userData = await AuthService().getUserData(user.uid);
-      return userData?.fullName ?? "Người dùng";
+      return _firestore
+          .collection('users')
+          .doc(user.uid)
+          .snapshots()
+          .map((snapshot) {
+        if (snapshot.exists) {
+          return snapshot.data()?['fullName'] ?? 'Người dùng';
+        } else {
+          return 'Người dùng';
+        }
+      });
+    } else {
+      // Nếu user null thì trả stream có 1 giá trị mặc định
+      return Stream.value('Người dùng');
     }
-    return "Khách";
+  }
+
+  Future<bool> verifyOldPassword(String oldPassword) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return false;
+
+      // Tạo credential từ email và mật khẩu cũ
+      AuthCredential credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: oldPassword,
+      );
+
+      // Reauthenticate user
+      await user.reauthenticateWithCredential(credential);
+
+      return true; // Nếu không lỗi, tức là mật khẩu cũ đúng
+    } catch (e) {
+      return false; // Nếu lỗi, mật khẩu cũ sai
     }
-//
+  }
+
+  Future<void> changePassword(String newPassword) async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        await user.updatePassword(newPassword);
+      }
+    } catch (e) {
+      throw Exception('Không thể đổi mật khẩu: $e');
+    }
+  }
+
+
 }

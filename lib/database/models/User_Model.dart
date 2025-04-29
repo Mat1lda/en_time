@@ -6,6 +6,9 @@ class UserModel {
   final String email;
   final DateTime createdAt;
   final String? fcmToken;
+  final DateTime? birthday; // Ngày sinh
+  final String? gender;     // Giới tính
+  final String? avatarUrl; // 👈 Thêm dòng này
 
   UserModel({
     required this.uid,
@@ -13,6 +16,9 @@ class UserModel {
     required this.email,
     required this.createdAt,
     this.fcmToken, //
+    this.birthday,
+    this.gender,
+    this.avatarUrl, // 👈 Thêm trong constructor
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -22,6 +28,11 @@ class UserModel {
       email: json['email'],
       createdAt: (json['createdAt'] as Timestamp).toDate(),
       fcmToken: json['fcmToken'], // map từ JSON
+      birthday: json['birthday'] != null
+          ? (json['birthday'] as Timestamp).toDate()
+          : null,
+      gender: json['gender'],
+      avatarUrl: json['avatarUrl'], // 👈 Thêm dòng map từ JSON
     );
   }
 
@@ -32,6 +43,9 @@ class UserModel {
       'email': email,
       'createdAt': createdAt,
       'fcmToken': fcmToken, // ghi vào Firestore
+      'birthday': birthday,
+      'gender': gender,
+      'avatarUrl': avatarUrl, // 👈 Thêm khi ghi Firestore
     };
   }
 }

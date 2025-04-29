@@ -59,6 +59,8 @@ dependencies:
     path: dev_lib/calendar_agenda/
   #flutter_local_notifications: ^19.0.0
   timezone: ^0.10.0
+  image_picker: ^1.0.4
+  firebase_storage: ^12.4.5
 
 dev_dependencies:
   flutter_test:
