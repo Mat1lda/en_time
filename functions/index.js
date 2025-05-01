@@ -5,6 +5,7 @@ const { getFirestore, Timestamp } = require("firebase-admin/firestore");
 const { getMessaging } = require("firebase-admin/messaging");
 const logger = require("firebase-functions/logger");
 const { DateTime } = require("luxon"); // 📦 Xử lý ngày giờ mạnh mẽ
+const { onDocumentDeleted } = require('firebase-functions/v2/firestore');
 
 initializeApp();
 
@@ -132,4 +133,34 @@ exports.deadlineNotification = onDocumentCreated("deadlines/{deadlineId}", async
   }
 });
 
+// Lắng nghe sự kiện xóa deadline
+exports.onDeadlineDeleted = onDocumentDeleted("deadlines/{deadlineId}", async (event) => {
+  const context = event.params;
+  const deadlineId = context.deadlineId;
 
+  try {
+    // Tìm các bản ghi trong "scheduledDeadlineNotifications" có deadlineId trùng với deadlineId đã xóa
+    const notificationsSnapshot = await getFirestore()
+      .collection("scheduledDeadlineNotifications")
+      .where("deadlineId", "==", deadlineId)
+      .get();
+
+    // Nếu có các thông báo liên quan, xóa chúng
+    if (!notificationsSnapshot.empty) {
+      const batch = getFirestore().batch();
+
+      // Duyệt qua tất cả các thông báo và xóa
+      notificationsSnapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+
+      // Commit tất cả các thay đổi xóa trong batch
+      await batch.commit();
+      logger.info(`✅ Đã xóa tất cả các scheduledDeadlineNotifications có deadlineId: ${deadlineId}`);
+    } else {
+      logger.info(`⛔ Không tìm thấy scheduledDeadlineNotifications có deadlineId: ${deadlineId}`);
+    }
+  } catch (error) {
+    logger.error("❌ Lỗi khi xử lý xóa scheduledDeadlineNotifications:", error);
+  }
+});

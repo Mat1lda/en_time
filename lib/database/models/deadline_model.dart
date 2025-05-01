@@ -5,7 +5,7 @@ import 'package:syncfusion_flutter_calendar/calendar.dart';
 class DeadlineModel {
   final String id;
   final DateTime day;
-  final DateTime timeStart;
+  //final DateTime timeStart;
   final DateTime timeEnd;
   final String subject;
   final String deadlineName;
@@ -15,7 +15,7 @@ class DeadlineModel {
   DeadlineModel({
     required this.id,
     required this.day,
-    required this.timeStart,
+    //required this.timeStart,
     required this.timeEnd,
     required this.subject,
     required this.deadlineName,
@@ -27,7 +27,7 @@ class DeadlineModel {
     return {
       'id': id,
       'day': day.toIso8601String(),
-      'timeStart': timeStart.toIso8601String(),
+      //'timeStart': timeStart.toIso8601String(),
       'timeEnd': timeEnd.toIso8601String(),
       'subject': subject,
       'deadlineName': deadlineName,
@@ -61,7 +61,7 @@ class DeadlineModel {
       return DeadlineModel(
         id: map['id'] ?? '',
         day: parseDateTime(map['day']),
-        timeStart: parseDateTime(map['timeStart']),
+        //timeStart: parseDateTime(map['timeStart']),
         timeEnd: parseDateTime(map['timeEnd']),
         subject: map['subject'] ?? '',
         deadlineName: map['deadlineName'] ?? '',
@@ -74,7 +74,7 @@ class DeadlineModel {
       return DeadlineModel(
         id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
         day: DateTime.now(),
-        timeStart: DateTime.now(),
+        //timeStart: DateTime.now(),
         timeEnd: DateTime.now().add(Duration(hours: 1)),
         subject: map['subject'] ?? 'Default Subject',
         deadlineName: map['deadlineName'] ?? 'Default Deadline',
@@ -87,7 +87,7 @@ class DeadlineModel {
   Appointment toAppointment() {
     return Appointment(
       id: id,
-      startTime: timeStart,
+      startTime: DateTime.now(),
       endTime: timeEnd,
       subject: '$subject - $deadlineName',
       color: deadlineColor,

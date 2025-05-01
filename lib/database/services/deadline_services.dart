@@ -55,7 +55,7 @@ class DeadlineService {
             final dayCompare = a.day.compareTo(b.day);
             if (dayCompare != 0) return dayCompare;
             // If days are equal, sort by start time
-            return a.timeStart.compareTo(b.timeStart);
+            return a.timeEnd.compareTo(b.timeEnd);
           });
           return deadlines;
         });
@@ -87,7 +87,7 @@ class DeadlineService {
           }).toList();
           
           // Sort deadlines by time
-          dayDeadlines.sort((a, b) => a.timeStart.compareTo(b.timeStart));
+          dayDeadlines.sort((a, b) => a.timeEnd.compareTo(b.timeEnd));
           return dayDeadlines;
         });
   }
@@ -120,7 +120,7 @@ class DeadlineService {
             final dayCompare = a.day.compareTo(b.day);
             if (dayCompare != 0) return dayCompare;
             // If days are equal, sort by time
-            return a.timeStart.compareTo(b.timeStart);
+            return a.timeEnd.compareTo(b.timeEnd);
           });
           
           return upcomingDeadlines;

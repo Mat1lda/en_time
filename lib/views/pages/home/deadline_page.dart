@@ -7,6 +7,7 @@ import '../../../database/models/subject_model.dart';
 import '../../../database/services/deadline_services.dart';
 import '../../../database/services/subject_services.dart';
 import '../../../components/colors.dart';
+import 'package:en_time/views/pages/home/noti_deadline_page.dart';
 
 class DeadlinePage extends StatefulWidget {
   @override
@@ -81,6 +82,155 @@ class _DeadlinePageState extends State<DeadlinePage> {
     return DateFormat('hh:mm a').format(time);
   }
 
+  // Hàm xử lý sự kiện khi bấm vào icon thông báo
+  void _navigateToNotifications(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NotificationDeadlinePage(), // Màn hình thông báo deadline
+      ),
+    );
+  }
+
+  // void _showAddDeadlineDialog() {
+  //   TextEditingController deadlineController = TextEditingController();
+  //   DateTime selectedDate = DateTime.now();
+  //   Color selectedColor = _colorCollection[Random().nextInt(_colorCollection.length)];
+  //   String? selectedSubjectId;
+  //   String? selectedSubjectName;
+  //
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) => AlertDialog(
+  //       backgroundColor: Colors.white,
+  //       title: Text('Thêm Deadline', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18), textAlign: TextAlign.center,),
+  //       content: Column(
+  //         mainAxisSize: MainAxisSize.min,
+  //         children: [
+  //           StreamBuilder<List<SubjectModel>>(
+  //             stream: _subjectService.getAllSubjects(),
+  //             builder: (context, snapshot) {
+  //               if (snapshot.connectionState == ConnectionState.waiting) {
+  //                 return CircularProgressIndicator();
+  //               }
+  //
+  //               final subjects = snapshot.data ?? [];
+  //               if (subjects.isEmpty) {
+  //                 return Text('Chưa có môn học nào. Vui lòng thêm môn học trước.');
+  //               }
+  //
+  //               return DropdownButtonFormField<String>(
+  //                 decoration: InputDecoration(
+  //                   labelText: 'Tên môn học',
+  //                   border: OutlineInputBorder(),
+  //                 ),
+  //                 value: selectedSubjectId,
+  //                 items: subjects.map((subject) {
+  //                   return DropdownMenuItem<String>(
+  //                     value: subject.id,
+  //                     child: Text(subject.subject),
+  //                   );
+  //                 }).toList(),
+  //                 onChanged: (value) {
+  //                   setState(() {
+  //                     selectedSubjectId = value;
+  //                     selectedSubjectName = subjects.firstWhere((s) => s.id == value).subject;
+  //                   });
+  //                 },
+  //               );
+  //             },
+  //           ),
+  //           SizedBox(height: 16),
+  //           TextField(
+  //             controller: deadlineController,
+  //             decoration: InputDecoration(
+  //               labelText: 'Tên deadline',
+  //               hintText: 'Nhập tên deadline',
+  //               border: OutlineInputBorder(),
+  //             ),
+  //           ),
+  //           SizedBox(height: 16),
+  //           ElevatedButton(
+  //             onPressed: () async {
+  //               DateTime? pickedDate = await showDatePicker(
+  //                 context: context,
+  //                 initialDate: selectedDate,
+  //                 firstDate: DateTime.now(),
+  //                 lastDate: DateTime(2100),
+  //               );
+  //               if (pickedDate != null) {
+  //                 setState(() {
+  //                   selectedDate = DateTime(
+  //                     pickedDate.year,
+  //                     pickedDate.month,
+  //                     pickedDate.day,
+  //                     selectedDate.hour,
+  //                     selectedDate.minute
+  //                   );
+  //                 });
+  //               }
+  //             },
+  //             child: Text('Chọn ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),
+  //           ),
+  //           SizedBox(height: 8),
+  //           ElevatedButton(
+  //             onPressed: () async {
+  //               TimeOfDay? pickedTime = await showTimePicker(
+  //                 context: context,
+  //                 initialTime: TimeOfDay.fromDateTime(selectedDate),
+  //               );
+  //               if (pickedTime != null) {
+  //                 setState(() {
+  //                   selectedDate = DateTime(
+  //                     selectedDate.year,
+  //                     selectedDate.month,
+  //                     selectedDate.day,
+  //                     pickedTime.hour,
+  //                     pickedTime.minute,
+  //                   );
+  //                 });
+  //               }
+  //             },
+  //             child: Text('Chọn giờ: ${TimeOfDay.fromDateTime(selectedDate).format(context)}'),
+  //           ),
+  //         ],
+  //       ),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(context),
+  //           child: Text('Hủy'),
+  //         ),
+  //         TextButton(
+  //           onPressed: () {
+  //             if (selectedSubjectId == null || deadlineController.text.isEmpty) {
+  //               ScaffoldMessenger.of(context).showSnackBar(
+  //                 SnackBar(content: Text('Vui lòng điền đầy đủ thông tin')),
+  //               );
+  //               return;
+  //             }
+  //
+  //             // Create deadline in Firebase
+  //             DeadlineModel newDeadline = DeadlineModel(
+  //               id: DateTime.now().millisecondsSinceEpoch.toString(),
+  //               day: DateTime(selectedDate.year, selectedDate.month, selectedDate.day),
+  //               timeStart: selectedDate,
+  //               timeEnd: selectedDate.add(Duration(hours: 1)),
+  //               subject: selectedSubjectName!,
+  //               deadlineName: deadlineController.text,
+  //               deadlineColor: selectedColor,
+  //             );
+  //
+  //             _deadlineService.addDeadline(newDeadline).then((_) {
+  //               Navigator.pop(context);
+  //             });
+  //           },
+  //           child: Text('Thêm'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
   void _showAddDeadlineDialog() {
     TextEditingController deadlineController = TextEditingController();
     DateTime selectedDate = DateTime.now();
@@ -92,97 +242,111 @@ class _DeadlinePageState extends State<DeadlinePage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        title: Text('Thêm Deadline', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18), textAlign: TextAlign.center,),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            StreamBuilder<List<SubjectModel>>(
-              stream: _subjectService.getAllSubjects(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return CircularProgressIndicator();
-                }
+        title: Text(
+          'Thêm Deadline',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+          textAlign: TextAlign.center,
+        ),
+        content: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Chọn môn học
+                StreamBuilder<List<SubjectModel>>(
+                  stream: _subjectService.getAllSubjects(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return CircularProgressIndicator();
+                    }
 
-                final subjects = snapshot.data ?? [];
-                if (subjects.isEmpty) {
-                  return Text('Chưa có môn học nào. Vui lòng thêm môn học trước.');
-                }
+                    final subjects = snapshot.data ?? [];
+                    if (subjects.isEmpty) {
+                      return Text('Chưa có môn học nào. Vui lòng thêm môn học trước.');
+                    }
 
-                return DropdownButtonFormField<String>(
+                    return DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        labelText: 'Tên môn học',
+                        border: OutlineInputBorder(),
+                      ),
+                      value: selectedSubjectId,
+                      items: subjects.map((subject) {
+                        return DropdownMenuItem<String>(
+                          value: subject.id,
+                          child: Text(subject.subject),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedSubjectId = value;
+                          selectedSubjectName = subjects.firstWhere((s) => s.id == value).subject;
+                        });
+                      },
+                    );
+                  },
+                ),
+                SizedBox(height: 16),
+                // Nhập tên deadline
+                TextField(
+                  controller: deadlineController,
                   decoration: InputDecoration(
-                    labelText: 'Tên môn học',
+                    labelText: 'Tên deadline',
+                    hintText: 'Nhập tên deadline',
                     border: OutlineInputBorder(),
                   ),
-                  value: selectedSubjectId,
-                  items: subjects.map((subject) {
-                    return DropdownMenuItem<String>(
-                      value: subject.id,
-                      child: Text(subject.subject),
+                ),
+                SizedBox(height: 16),
+                // Chọn ngày
+                ElevatedButton(
+                  onPressed: () async {
+                    DateTime? pickedDate = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime(2100),
                     );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      selectedSubjectId = value;
-                      selectedSubjectName = subjects.firstWhere((s) => s.id == value).subject;
-                    });
+                    if (pickedDate != null) {
+                      setState(() {
+                        selectedDate = DateTime(
+                          pickedDate.year,
+                          pickedDate.month,
+                          pickedDate.day,
+                          selectedDate.hour,
+                          selectedDate.minute,
+                        );
+                      });
+                    }
                   },
-                );
-              },
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: deadlineController,
-              decoration: InputDecoration(
-                labelText: 'Tên deadline',
-                hintText: 'Nhập tên deadline',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () async {
-                DateTime? pickedDate = await showDatePicker(
-                  context: context,
-                  initialDate: selectedDate,
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime(2100),
-                );
-                if (pickedDate != null) {
-                  setState(() {
-                    selectedDate = DateTime(
-                      pickedDate.year,
-                      pickedDate.month,
-                      pickedDate.day,
-                      selectedDate.hour,
-                      selectedDate.minute
+                  child: Text(
+                    'Chọn ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                  ),
+                ),
+                SizedBox(height: 8),
+                // Chọn giờ
+                ElevatedButton(
+                  onPressed: () async {
+                    TimeOfDay? pickedTime = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.fromDateTime(selectedDate),
                     );
-                  });
-                }
-              },
-              child: Text('Chọn ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),
-            ),
-            SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: () async {
-                TimeOfDay? pickedTime = await showTimePicker(
-                  context: context,
-                  initialTime: TimeOfDay.fromDateTime(selectedDate),
-                );
-                if (pickedTime != null) {
-                  setState(() {
-                    selectedDate = DateTime(
-                      selectedDate.year,
-                      selectedDate.month,
-                      selectedDate.day,
-                      pickedTime.hour,
-                      pickedTime.minute,
-                    );
-                  });
-                }
-              },
-              child: Text('Chọn giờ: ${TimeOfDay.fromDateTime(selectedDate).format(context)}'),
-            ),
-          ],
+                    if (pickedTime != null) {
+                      setState(() {
+                        selectedDate = DateTime(
+                          selectedDate.year,
+                          selectedDate.month,
+                          selectedDate.day,
+                          pickedTime.hour,
+                          pickedTime.minute,
+                        );
+                      });
+                    }
+                  },
+                  child: Text('Chọn giờ: ${TimeOfDay.fromDateTime(selectedDate).format(context)}'),
+                ),
+              ],
+            );
+          },
         ),
         actions: [
           TextButton(
@@ -202,13 +366,13 @@ class _DeadlinePageState extends State<DeadlinePage> {
               DeadlineModel newDeadline = DeadlineModel(
                 id: DateTime.now().millisecondsSinceEpoch.toString(),
                 day: DateTime(selectedDate.year, selectedDate.month, selectedDate.day),
-                timeStart: selectedDate,
-                timeEnd: selectedDate.add(Duration(hours: 1)),
+                //timeStart: selectedDate,
+                timeEnd: selectedDate,
                 subject: selectedSubjectName!,
                 deadlineName: deadlineController.text,
                 deadlineColor: selectedColor,
               );
-              
+
               _deadlineService.addDeadline(newDeadline).then((_) {
                 Navigator.pop(context);
               });
@@ -305,7 +469,7 @@ class _DeadlinePageState extends State<DeadlinePage> {
                 DeadlineModel updatedDeadline = DeadlineModel(
                   id: deadline.id,
                   day: deadline.day,
-                  timeStart: deadline.timeStart,
+                  //timeStart: deadline.timeStart,
                   timeEnd: deadline.timeEnd,
                   subject: deadline.subject,
                   deadlineName: deadline.deadlineName,
@@ -324,7 +488,7 @@ class _DeadlinePageState extends State<DeadlinePage> {
                           DeadlineModel undoDeadline = DeadlineModel(
                             id: deadline.id,
                             day: deadline.day,
-                            timeStart: deadline.timeStart,
+                            //timeStart: deadline.timeStart,
                             timeEnd: deadline.timeEnd,
                             subject: deadline.subject,
                             deadlineName: deadline.deadlineName,
@@ -353,7 +517,7 @@ class _DeadlinePageState extends State<DeadlinePage> {
                     DeadlineModel updatedDeadline = DeadlineModel(
                       id: deadline.id,
                       day: deadline.day,
-                      timeStart: deadline.timeStart,
+                      //timeStart: deadline.timeStart,
                       timeEnd: deadline.timeEnd,
                       subject: deadline.subject,
                       deadlineName: deadline.deadlineName,
@@ -430,6 +594,12 @@ class _DeadlinePageState extends State<DeadlinePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          _showAddDeadlineDialog();
+        },
+        child: const Icon(Icons.add),
+      ),
       backgroundColor: Colors.grey[50],
       appBar: AppBar( 
         backgroundColor: AppColors.white,
@@ -465,6 +635,25 @@ class _DeadlinePageState extends State<DeadlinePage> {
           ),
         ),
         actions: [
+          // Container(
+          //   margin: const EdgeInsets.all(8),
+          //   decoration: BoxDecoration(
+          //     color: Colors.white,
+          //     shape: BoxShape.circle,
+          //     boxShadow: [
+          //       BoxShadow(
+          //         color: Colors.grey.withOpacity(0.15),
+          //         spreadRadius: 1,
+          //         blurRadius: 3,
+          //       ),
+          //     ],
+          //   ),
+          //   child:
+          //   IconButton(
+          //     onPressed: _showAddDeadlineDialog,
+          //     icon: Icon(Icons.add, color: AppColors.primaryColor1),
+          //   ),
+          // ),
           Container(
             margin: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -478,9 +667,10 @@ class _DeadlinePageState extends State<DeadlinePage> {
                 ),
               ],
             ),
-            child: IconButton(
-              onPressed: _showAddDeadlineDialog,
-              icon: Icon(Icons.add, color: AppColors.primaryColor1),
+            child:
+            IconButton(
+              onPressed: () => _navigateToNotifications(context), // Sự kiện bấm vào icon thông báo
+              icon: Icon(Icons.notifications_active, color: AppColors.primaryColor1),
             ),
           ),
         ],

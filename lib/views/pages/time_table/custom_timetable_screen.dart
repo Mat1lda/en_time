@@ -513,8 +513,8 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
               DeadlineModel updatedDeadline = DeadlineModel(
                 id: appointment.id.toString(),
                 day: DateTime(selectedDate.year, selectedDate.month, selectedDate.day),
-                timeStart: selectedDate,
-                timeEnd: selectedDate.add(Duration(hours: 1)),
+                //timeStart: selectedDate,
+                timeEnd: selectedDate,
                 subject: subjectController.text,
                 deadlineName: deadlineController.text,
                 deadlineColor: selectedColor,
@@ -533,12 +533,152 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
     );
   }
 
+  // void _showDeadlineDialog() {
+  //   TextEditingController deadlineController = TextEditingController();
+  //   DateTime selectedDate = DateTime.now();
+  //   Color selectedColor = _colorCollection[Random().nextInt(_colorCollection.length)];
+  //   String? selectedSubjectId;
+  //   String? selectedSubjectName;
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) => AlertDialog(
+  //       backgroundColor: Colors.white,
+  //       title: Text(
+  //         'Thêm Deadline',
+  //         style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+  //         textAlign: TextAlign.center,
+  //       ),
+  //       content: Column(
+  //         mainAxisSize: MainAxisSize.min,
+  //         children: [
+  //           StreamBuilder<List<SubjectModel>>(
+  //             stream: _subjectService.getAllSubjects(),
+  //             builder: (context, snapshot) {
+  //               if (snapshot.connectionState == ConnectionState.waiting) {
+  //                 return CircularProgressIndicator();
+  //               }
+  //
+  //               final subjects = snapshot.data ?? [];
+  //               if (subjects.isEmpty) {
+  //                 return Text('Chưa có môn học nào. Vui lòng thêm môn học trước.');
+  //               }
+  //
+  //               return DropdownButtonFormField<String>(
+  //                 decoration: InputDecoration(
+  //                   labelText: 'Tên môn học',
+  //                   border: OutlineInputBorder(),
+  //                 ),
+  //                 value: selectedSubjectId,
+  //                 items: subjects.map((subject) {
+  //                   return DropdownMenuItem<String>(
+  //                     value: subject.id,
+  //                     child: Text(subject.subject),
+  //                   );
+  //                 }).toList(),
+  //                 onChanged: (value) {
+  //                   setState(() {
+  //                     selectedSubjectId = value;
+  //                     selectedSubjectName = subjects.firstWhere((s) => s.id == value).subject;
+  //                   });
+  //                 },
+  //               );
+  //             },
+  //           ),
+  //           SizedBox(height: 16),
+  //           TextField(
+  //             controller: deadlineController,
+  //             decoration: InputDecoration(
+  //               labelText: 'Tên deadline',
+  //               hintText: 'Nhập tên deadline',
+  //               border: OutlineInputBorder(),
+  //             ),
+  //           ),
+  //           SizedBox(height: 16),
+  //           ElevatedButton(
+  //             onPressed: () async {
+  //               DateTime? pickedDate = await showDatePicker(
+  //                 context: context,
+  //                 initialDate: selectedDate,
+  //                 firstDate: DateTime.now(),
+  //                 lastDate: DateTime(2100),
+  //               );
+  //               if (pickedDate != null) {
+  //                 setState(() {
+  //                   selectedDate = DateTime(
+  //                     pickedDate.year,
+  //                     pickedDate.month,
+  //                     pickedDate.day,
+  //                     selectedDate.hour,
+  //                     selectedDate.minute,
+  //                   );
+  //                 });
+  //               }
+  //             },
+  //             child: Text('Chọn ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),
+  //           ),
+  //           SizedBox(height: 8),
+  //           ElevatedButton(
+  //             onPressed: () async {
+  //               TimeOfDay? pickedTime = await showTimePicker(
+  //                 context: context,
+  //                 initialTime: TimeOfDay.fromDateTime(selectedDate),
+  //               );
+  //               if (pickedTime != null) {
+  //                 setState(() {
+  //                   selectedDate = DateTime(
+  //                     selectedDate.year,
+  //                     selectedDate.month,
+  //                     selectedDate.day,
+  //                     pickedTime.hour,
+  //                     pickedTime.minute,
+  //                   );
+  //                 });
+  //               }
+  //             },
+  //             child: Text('Chọn giờ: ${TimeOfDay.fromDateTime(selectedDate).format(context)}'),
+  //           ),
+  //         ],
+  //       ),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(context),
+  //           child: Text('Hủy'),
+  //         ),
+  //         TextButton(
+  //           onPressed: () {
+  //             if (selectedSubjectId == null || deadlineController.text.isEmpty) {
+  //               ScaffoldMessenger.of(context).showSnackBar(
+  //                 SnackBar(content: Text('Vui lòng điền đầy đủ thông tin')),
+  //               );
+  //               return;
+  //             }
+  //             DeadlineModel newDeadline = DeadlineModel(
+  //               id: DateTime.now().millisecondsSinceEpoch.toString(),
+  //               day: DateTime(selectedDate.year, selectedDate.month, selectedDate.day),
+  //               timeStart: selectedDate,
+  //               timeEnd: selectedDate.add(Duration(hours: 1)),
+  //               subject: selectedSubjectName!,
+  //               deadlineName: deadlineController.text,
+  //               deadlineColor: selectedColor,
+  //             );
+  //             _deadlineService.addDeadline(newDeadline).then((_) {
+  //               Navigator.pop(context);
+  //             });
+  //           },
+  //           child: Text('Thêm'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
   void _showDeadlineDialog() {
     TextEditingController deadlineController = TextEditingController();
     DateTime selectedDate = DateTime.now();
     Color selectedColor = _colorCollection[Random().nextInt(_colorCollection.length)];
     String? selectedSubjectId;
     String? selectedSubjectName;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -548,96 +688,106 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
           textAlign: TextAlign.center,
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            StreamBuilder<List<SubjectModel>>(
-              stream: _subjectService.getAllSubjects(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return CircularProgressIndicator();
-                }
+        content: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Chọn môn học
+                StreamBuilder<List<SubjectModel>>(
+                  stream: _subjectService.getAllSubjects(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return CircularProgressIndicator();
+                    }
 
-                final subjects = snapshot.data ?? [];
-                if (subjects.isEmpty) {
-                  return Text('Chưa có môn học nào. Vui lòng thêm môn học trước.');
-                }
+                    final subjects = snapshot.data ?? [];
+                    if (subjects.isEmpty) {
+                      return Text('Chưa có môn học nào. Vui lòng thêm môn học trước.');
+                    }
 
-                return DropdownButtonFormField<String>(
+                    return DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        labelText: 'Tên môn học',
+                        border: OutlineInputBorder(),
+                      ),
+                      value: selectedSubjectId,
+                      items: subjects.map((subject) {
+                        return DropdownMenuItem<String>(
+                          value: subject.id,
+                          child: Text(subject.subject),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedSubjectId = value;
+                          selectedSubjectName = subjects.firstWhere((s) => s.id == value).subject;
+                        });
+                      },
+                    );
+                  },
+                ),
+                SizedBox(height: 16),
+                // Nhập tên deadline
+                TextField(
+                  controller: deadlineController,
                   decoration: InputDecoration(
-                    labelText: 'Tên môn học',
+                    labelText: 'Tên deadline',
+                    hintText: 'Nhập tên deadline',
                     border: OutlineInputBorder(),
                   ),
-                  value: selectedSubjectId,
-                  items: subjects.map((subject) {
-                    return DropdownMenuItem<String>(
-                      value: subject.id,
-                      child: Text(subject.subject),
+                ),
+                SizedBox(height: 16),
+                // Chọn ngày
+                ElevatedButton(
+                  onPressed: () async {
+                    DateTime? pickedDate = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime(2100),
                     );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      selectedSubjectId = value;
-                      selectedSubjectName = subjects.firstWhere((s) => s.id == value).subject;
-                    });
+                    if (pickedDate != null) {
+                      setState(() {
+                        selectedDate = DateTime(
+                          pickedDate.year,
+                          pickedDate.month,
+                          pickedDate.day,
+                          selectedDate.hour,
+                          selectedDate.minute,
+                        );
+                      });
+                    }
                   },
-                );
-              },
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: deadlineController,
-              decoration: InputDecoration(
-                labelText: 'Tên deadline',
-                hintText: 'Nhập tên deadline',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () async {
-                DateTime? pickedDate = await showDatePicker(
-                  context: context,
-                  initialDate: selectedDate,
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime(2100),
-                );
-                if (pickedDate != null) {
-                  setState(() {
-                    selectedDate = DateTime(
-                      pickedDate.year,
-                      pickedDate.month,
-                      pickedDate.day,
-                      selectedDate.hour,
-                      selectedDate.minute,
+                  child: Text(
+                    'Chọn ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                  ),
+                ),
+                SizedBox(height: 8),
+                // Chọn giờ
+                ElevatedButton(
+                  onPressed: () async {
+                    TimeOfDay? pickedTime = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.fromDateTime(selectedDate),
                     );
-                  });
-                }
-              },
-              child: Text('Chọn ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),
-            ),
-            SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: () async {
-                TimeOfDay? pickedTime = await showTimePicker(
-                  context: context,
-                  initialTime: TimeOfDay.fromDateTime(selectedDate),
-                );
-                if (pickedTime != null) {
-                  setState(() {
-                    selectedDate = DateTime(
-                      selectedDate.year,
-                      selectedDate.month,
-                      selectedDate.day,
-                      pickedTime.hour,
-                      pickedTime.minute,
-                    );
-                  });
-                }
-              },
-              child: Text('Chọn giờ: ${TimeOfDay.fromDateTime(selectedDate).format(context)}'),
-            ),
-          ],
+                    if (pickedTime != null) {
+                      setState(() {
+                        selectedDate = DateTime(
+                          selectedDate.year,
+                          selectedDate.month,
+                          selectedDate.day,
+                          pickedTime.hour,
+                          pickedTime.minute,
+                        );
+                      });
+                    }
+                  },
+                  child: Text('Chọn giờ: ${TimeOfDay.fromDateTime(selectedDate).format(context)}'),
+                ),
+              ],
+            );
+          },
         ),
         actions: [
           TextButton(
@@ -652,15 +802,18 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
                 );
                 return;
               }
+
+              // Create deadline in Firebase
               DeadlineModel newDeadline = DeadlineModel(
                 id: DateTime.now().millisecondsSinceEpoch.toString(),
                 day: DateTime(selectedDate.year, selectedDate.month, selectedDate.day),
-                timeStart: selectedDate,
-                timeEnd: selectedDate.add(Duration(hours: 1)),
+                //timeStart: selectedDate,
+                timeEnd: selectedDate,
                 subject: selectedSubjectName!,
                 deadlineName: deadlineController.text,
                 deadlineColor: selectedColor,
               );
+
               _deadlineService.addDeadline(newDeadline).then((_) {
                 Navigator.pop(context);
               });

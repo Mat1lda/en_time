@@ -3,6 +3,7 @@ import 'package:en_time/views/pages/task_schedule/incomplete_tasks_view.dart';
 import 'package:en_time/views/pages/task_schedule/personal_task_view.dart';
 import 'package:en_time/views/pages/task_schedule/remind_task_view.dart';
 import 'package:en_time/views/pages/task_schedule/task_schedule_view.dart';
+import 'package:en_time/views/pages/task_schedule/noti_task_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -79,7 +80,14 @@ class _HomeTaskViewState extends State<HomeTaskView> {
                         ],
                       ),
                       child: IconButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => NotificationTaskPage(),
+                            ),
+                          );
+                        },
                         icon: Icon(Icons.notifications_active, color: AppColors.primaryColor1),
                       ),
                     ),
@@ -411,9 +419,9 @@ class _HomeTaskViewState extends State<HomeTaskView> {
                               return Center(child: CircularProgressIndicator());
                             }
                             final allTasks = snapshot.data ?? [];
-                            final personalCount = allTasks.where((task) => 
+                            final personalCount = allTasks.where((task) =>
                               task.taskType == "Hoạt động cá nhân" && !task.isDone).length;
-                            final extraCount = allTasks.where((task) => 
+                            final extraCount = allTasks.where((task) =>
                               task.taskType == "Hoạt động ngoại khóa" && !task.isDone).length;
 
                             return Row(

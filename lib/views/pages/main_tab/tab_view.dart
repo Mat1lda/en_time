@@ -46,7 +46,7 @@ class _MainTabViewState extends State<MainTabView> {
                 BoxShadow(color: Colors.black12, blurRadius: 2),
               ],
             ),
-            child: Icon(Icons.search, color: AppColors.white, size: 35),
+            child: Icon(Icons.analytics, color: AppColors.white, size: 35),
           ),
         ),
       ),
@@ -95,8 +95,8 @@ class _MainTabViewState extends State<MainTabView> {
 
               const SizedBox(width: 40),
               TabButton(
-                icon: "assets/images/profile_tab.png",
-                selectIcon: "assets/images/profile_tab_select.png",
+                icon: "assets/images/calendar_1.png",
+                selectIcon: "assets/images/time-and-date.png",
                 isActive: selectTab == 2,
                 onTap: () {
                   selectTab = 2;
