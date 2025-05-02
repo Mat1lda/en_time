@@ -240,15 +240,61 @@ class _ChartPageState extends State<ChartPage> {
           return Center(child: CircularProgressIndicator());
         }
 
+        // final deadlines = snapshot.data![0] as List<DeadlineModel>;
+        // final subjects = snapshot.data![1] as List;
+        //
+        // final upcomingDeadlines = deadlines.where((deadline) =>
+        //   deadline.day.isAfter(DateTime.now())).length;
+        //
+        // final attendedSubjects = subjects.length;
+        // final completedTasks = tasks.where((t) => t.isDone).length;
+        // final totalTasks = tasks.length;
+
+        // Điều kiện lọc theo tuần
+        final now = DateTime.now();
+        final monday = now.subtract(Duration(days: now.weekday - 1)); // Thứ 2 đầu tuần
+        final sunday = monday.add(Duration(days: 7)); // Chủ nhật
+
+        // Lọc Task
+        final weeklyTasks = tasks.where((task) =>
+        task.day.isAfter(monday.subtract(const Duration(days: 1))) &&
+            task.day.isBefore(sunday)).toList();
+        final completedTasks = weeklyTasks.where((t) => t.isDone).length;
+        final totalTasks = weeklyTasks.length;
+
+        // Lọc Deadline
         final deadlines = snapshot.data![0] as List<DeadlineModel>;
+        final weeklyDeadlines = deadlines.where((d) =>
+        d.day.isAfter(monday.subtract(const Duration(days: 1))) &&
+            d.day.isBefore(sunday)).toList();
+        final completedDeadlines = weeklyDeadlines.where((d) => d.isDone).length;
+        final totalDeadlines = weeklyDeadlines.length;
+
+        // Lọc môn học
         final subjects = snapshot.data![1] as List;
-        
-        final upcomingDeadlines = deadlines.where((deadline) => 
-          deadline.day.isAfter(DateTime.now())).length;
-        
-        final attendedSubjects = subjects.length;
-        final completedTasks = tasks.where((t) => t.isDone).length;
-        final totalTasks = tasks.length;
+        final subjectOccurrencesThisWeek = subjects.expand((subject) {
+          final List<DateTime> occurrences = [];
+          DateTime current = monday;
+          while (current.isBefore(sunday.add(Duration(days: 1)))) {
+            if (subject.rangeStart.isAfter(current) || subject.rangeEnd.isBefore(current)) {
+              current = current.add(Duration(days: 1));
+              continue;
+            }
+            if (subject.weekdays.contains(current.weekday)) {
+              occurrences.add(current);
+            }
+            current = current.add(Duration(days: 1));
+          }
+          return occurrences.map((date) => {
+            'date': date,
+            'timeEnd': DateTime(date.year, date.month, date.day, subject.timeEnd.hour, subject.timeEnd.minute),
+          });
+        }).toList();
+
+        final totalSubjectsThisWeek = subjectOccurrencesThisWeek.length;
+        final attendedSubjects = subjectOccurrencesThisWeek.where((occurrence) =>
+            occurrence['timeEnd']!.isBefore(now)
+        ).length;
 
         return Container(
           margin: EdgeInsets.only(bottom: 20),
@@ -277,7 +323,7 @@ class _ChartPageState extends State<ChartPage> {
                   child: _buildPerformanceCard(
                     icon: Icons.alarm,
                     title: "Deadline",
-                    value: "$upcomingDeadlines/${deadlines.length} sắp tới",
+                    value: "$completedDeadlines/$totalDeadlines",
                     color: Colors.orange,
                   ),
                 ),
@@ -291,7 +337,7 @@ class _ChartPageState extends State<ChartPage> {
                   child: _buildPerformanceCard(
                     icon: Icons.school,
                     title: "Lớp học",
-                    value: "$attendedSubjects/5",
+                    value: "$attendedSubjects/$totalSubjectsThisWeek",
                     color: Colors.blue,
                   ),
                 ),
@@ -398,15 +444,15 @@ class _ChartPageState extends State<ChartPage> {
                     ),
                   ),
                   SizedBox(height: 20),
-                  _buildLateRateDonutChart(tasks),
-                  SizedBox(height: 20),
-                  _buildFocusTimeHeatmap(tasks),
+                  _buildLateRateTaskChart(tasks),
                   SizedBox(height: 20),
                   _buildWeeklyChartWidget(tasks),
                   SizedBox(height: 20),
                   _buildCompletionChartWidget(tasks),
                   SizedBox(height: 20),
-                  _buildTaskTypeChart(tasks),
+                  _buildLateDeadlineChart(),
+                  SizedBox(height: 20),
+                  _buildDeadlineCompletionChartWidget(),
                   SizedBox(height: 20),
                   _buildSuggestionsWidget(tasks),
                 ],
@@ -417,12 +463,25 @@ class _ChartPageState extends State<ChartPage> {
       },
     );
   }
-  //ty le tre han
-  Widget _buildLateRateDonutChart(List<TaskModel> tasks) {
-    int totalTasks = tasks.length;
-    int lateTasks = tasks.where((task) => 
-      !task.isDone && task.day.isBefore(DateTime.now())).length;
-    double lateRate = totalTasks > 0 ? lateTasks / totalTasks : 0;
+
+  // Tỷ lệ trễ hạn các Task
+  Widget _buildLateRateTaskChart(List<TaskModel> tasks) {
+    final now = DateTime.now();
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    final sunday = monday.add(Duration(days: 7));
+
+    // Lọc các task trong tuần hiện tại
+    final weeklyTasks = tasks.where((task) =>
+    task.day.isAfter(monday.subtract(const Duration(days: 1))) &&
+        task.day.isBefore(sunday)
+    ).toList();
+
+    // Đếm số task trễ hạn trong tuần
+    final lateTasks = weeklyTasks.where((task) =>
+    !task.isDone).length;
+
+    final totalTasks = weeklyTasks.length;
+    final lateRate = totalTasks > 0 ? lateTasks / totalTasks : 0.0;
 
     return Container(
       height: 250,
@@ -443,7 +502,7 @@ class _ChartPageState extends State<ChartPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Tỉ lệ trễ hạn các nhiệm vụ',
+            'Tỉ lệ các hoạt động chưa hoàn thàn trong tuần này',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -480,59 +539,7 @@ class _ChartPageState extends State<ChartPage> {
     );
   }
 
-  Widget _buildSuggestionsWidget(List<TaskModel> tasks) {
-    return FutureBuilder<List<String>>(
-      future: Future.wait([
-        _deadlineService.getAllDeadlines().first,
-        _subjectService.getAllSubjects().first,
-      ]).then((data) {
-        final deadlines = data[0] as List<DeadlineModel>;
-        final subjects = data[1] as List<SubjectModel>;
-
-        return getImprovementSuggestions(
-          tasks: tasks,
-          deadlines: deadlines,
-          subjects: subjects,
-        );
-      }),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        }
-
-        if (snapshot.hasError) {
-          return Center(child: Text("Lỗi khi lấy gợi ý: ${snapshot.error}"));
-        }
-
-        final suggestions = snapshot.data ?? [];
-
-        if (suggestions.isEmpty) {
-          return Text("Hiện tại không có gợi ý nào. Bạn đang làm rất tốt!");
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Gợi ý cải thiện hiệu suất",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            SizedBox(height: 10),
-            ...suggestions.map((s) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: Row(
-                children: [
-                  Icon(Icons.lightbulb_outline, color: Colors.amber),
-                  SizedBox(width: 8),
-                  Expanded(child: Text(s)),
-                ],
-              ),
-            )),
-          ],
-        );
-      },
-    );
-  }
+  // Biểu đồ cột thống kê các hoạt động trong tuần này
   Widget _buildWeeklyChartWidget(List<TaskModel> tasks) {
     return Container(
       height: 250,
@@ -552,6 +559,14 @@ class _ChartPageState extends State<ChartPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            "Số lượng các hoạt động đã hoàn thành theo ngày",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 5),
           Row(
             children: [
               Container(
@@ -696,6 +711,7 @@ class _ChartPageState extends State<ChartPage> {
     );
   }
 
+  // Biểu đồ đường thống kê tỷ lệ hoàn thành các Task theo ngày
   Widget _buildCompletionChartWidget(List<TaskModel> tasks) {
     return Container(
       height: 250,
@@ -712,171 +728,440 @@ class _ChartPageState extends State<ChartPage> {
           ),
         ],
       ),
-      child: LineChart(
-        LineChartData(
-          gridData: FlGridData(
-            show: true,
-            drawVerticalLine: false,
-            horizontalInterval: 0.2,
-            getDrawingHorizontalLine: (value) {
-              return FlLine(
-                color: Colors.grey.withOpacity(0.1),
-                strokeWidth: 1,
-              );
-            },
-          ),
-          titlesData: FlTitlesData(
-            rightTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 40,
-                getTitlesWidget: (value, meta) {
-                  return Text(
-                    '${(value * 100).toInt()}%',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
-                  );
-                },
+      child:
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Tỷ lệ hoàn thành các hoạt động theo ngày",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (value, meta) {
-                  const titles = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Text(
-                      titles[value.toInt()],
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey[600],
+            SizedBox(height: 5),
+            Expanded(
+              child: LineChart(
+                LineChartData(
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: 0.2,
+                    getDrawingHorizontalLine: (value) {
+                      return FlLine(
+                        color: Colors.grey.withOpacity(0.1),
+                        strokeWidth: 1,
+                      );
+                    },
+                  ),
+                  titlesData: FlTitlesData(
+                    rightTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 40,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            '${(value * 100).toInt()}%',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
+                          );
+                        },
                       ),
                     ),
-                  );
-                },
-              ),
-            ),
-            leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          ),
-          borderData: FlBorderData(show: false),
-          lineBarsData: [
-            LineChartBarData(
-              spots: _processCompletionData(tasks),
-              isCurved: false,
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primaryColor1,
-                  AppColors.primaryColor1.withOpacity(0.5),
-                ],
-              ),
-              barWidth: 3,
-              isStrokeCapRound: true,
-              dotData: FlDotData(
-                show: true,
-                getDotPainter: (spot, percent, barData, index) {
-                  return FlDotCirclePainter(
-                    radius: 4,
-                    color: Colors.white,
-                    strokeWidth: 2,
-                    strokeColor: AppColors.primaryColor1,
-                  );
-                },
-              ),
-              belowBarData: BarAreaData(
-                show: true,
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.primaryColor1.withOpacity(0.2),
-                    AppColors.primaryColor1.withOpacity(0.0),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          const titles = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              titles[value.toInt()],
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: _processCompletionData(tasks),
+                      isCurved: false,
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.primaryColor1,
+                          AppColors.primaryColor1.withOpacity(0.5),
+                        ],
+                      ),
+                      barWidth: 3,
+                      isStrokeCapRound: true,
+                      dotData: FlDotData(
+                        show: true,
+                        getDotPainter: (spot, percent, barData, index) {
+                          return FlDotCirclePainter(
+                            radius: 4,
+                            color: Colors.white,
+                            strokeWidth: 2,
+                            strokeColor: AppColors.primaryColor1,
+                          );
+                        },
+                      ),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            AppColors.primaryColor1.withOpacity(0.2),
+                            AppColors.primaryColor1.withOpacity(0.0),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
+                  lineTouchData: LineTouchData(
+                    touchTooltipData: LineTouchTooltipData(
+                      tooltipRoundedRadius: 8,
+                      tooltipPadding: EdgeInsets.all(8),
+                      getTooltipItems: (touchedSpots) {
+                        return touchedSpots.map((spot) {
+                          return LineTooltipItem(
+                            'Hoàn thành\n${(spot.y * 100).toInt()}%',
+                            TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          );
+                        }).toList();
+                      },
+                    ),
+                  ),
                 ),
               ),
             ),
-          ],
-          lineTouchData: LineTouchData(
-            touchTooltipData: LineTouchTooltipData(
-              tooltipRoundedRadius: 8,
-              tooltipPadding: EdgeInsets.all(8),
-              getTooltipItems: (touchedSpots) {
-                return touchedSpots.map((spot) {
-                  return LineTooltipItem(
-                    'Hoàn thành\n${(spot.y * 100).toInt()}%',
-                    TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
+          ]
+        ),
+    );
+  }
+
+  // Tỷ lệ trễ hạn các Deadline
+  Widget _buildLateDeadlineChart() {
+    return FutureBuilder<List<DeadlineModel>>(
+      future: _deadlineService.getAllDeadlines().first,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Center(child: CircularProgressIndicator());
+        }
+
+        final now = DateTime.now();
+        final monday = now.subtract(Duration(days: now.weekday - 1));
+        final sunday = monday.add(Duration(days: 7));
+
+        final weeklyDeadlines = snapshot.data!.where((d) =>
+        d.timeEnd.isAfter(monday.subtract(const Duration(days: 1))) &&
+            d.timeEnd.isBefore(sunday)).toList();
+
+        final lateDeadlines = weeklyDeadlines
+            .where((d) => !d.isDone && d.timeEnd.isBefore(now))
+            .length;
+
+        final totalDeadlines = weeklyDeadlines.length;
+        final lateRate = totalDeadlines > 0 ? lateDeadlines / totalDeadlines : 0.0;
+
+        return Container(
+          height: 250,
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 2,
+                blurRadius: 10,
+                offset: Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Tỉ lệ trễ hạn deadline tuần này',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Expanded(
+                child: PieChart(
+                  PieChartData(
+                    sectionsSpace: 0,
+                    centerSpaceRadius: 40,
+                    sections: [
+                      PieChartSectionData(
+                        color: Colors.redAccent,
+                        value: lateRate * 100,
+                        title: '${(lateRate * 100).toInt()}%',
+                        radius: 40,
+                        titleStyle: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      PieChartSectionData(
+                        color: Colors.grey[300],
+                        value: 100 - (lateRate * 100),
+                        radius: 40,
+                        showTitle: false,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Biểu đồ đường thống kê tỷ lệ hoàn thành các Deadline theo ngày
+  Widget _buildDeadlineCompletionChartWidget() {
+    return FutureBuilder<List<DeadlineModel>>(
+      future: _deadlineService.getAllDeadlines().first,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Center(child: CircularProgressIndicator());
+        }
+
+        final deadlines = snapshot.data!;
+        final now = DateTime.now();
+        final monday = now.subtract(Duration(days: now.weekday - 1));
+
+        List<FlSpot> spots = [];
+
+        for (int i = 0; i < 7; i++) {
+          final day = monday.add(Duration(days: i));
+          final dailyDeadlines = deadlines.where((d) =>
+          d.timeEnd.year == day.year &&
+              d.timeEnd.month == day.month &&
+              d.timeEnd.day == day.day
+          ).toList();
+
+          if (dailyDeadlines.isEmpty) {
+            spots.add(FlSpot(i.toDouble(), 0));
+          } else {
+            final completed = dailyDeadlines.where((d) => d.isDone).length;
+            final completionRate = completed / dailyDeadlines.length;
+            spots.add(FlSpot(i.toDouble(), completionRate));
+          }
+        }
+
+        return Container(
+          height: 250,
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 2,
+                blurRadius: 10,
+                offset: Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Tỷ lệ hoàn thành các Deadline theo ngày",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: 10),
+              Expanded(
+                child: LineChart(
+                  LineChartData(
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: false,
+                      horizontalInterval: 0.2,
+                      getDrawingHorizontalLine: (value) {
+                        return FlLine(
+                          color: Colors.grey.withOpacity(0.1),
+                          strokeWidth: 1,
+                        );
+                      },
                     ),
-                  );
-                }).toList();
-              },
+                    titlesData: FlTitlesData(
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (value, meta) {
+                            const days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text(
+                                days[value.toInt()],
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      rightTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 40,
+                          getTitlesWidget: (value, meta) {
+                            return Text(
+                              '${(value * 100).toInt()}%',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 12,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: spots,
+                        isCurved: false,
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.orange,
+                            Colors.orange.withOpacity(0.5),
+                          ],
+                        ),
+                        barWidth: 3,
+                        isStrokeCapRound: true,
+                        dotData: FlDotData(
+                          show: true,
+                          getDotPainter: (spot, percent, barData, index) {
+                            return FlDotCirclePainter(
+                              radius: 4,
+                              color: Colors.white,
+                              strokeWidth: 2,
+                              strokeColor: Colors.orange,
+                            );
+                          },
+                        ),
+                        belowBarData: BarAreaData(
+                          show: true,
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.orange.withOpacity(0.2),
+                              Colors.orange.withOpacity(0.0),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                    lineTouchData: LineTouchData(
+                      touchTooltipData: LineTouchTooltipData(
+                        tooltipRoundedRadius: 8,
+                        tooltipPadding: EdgeInsets.all(8),
+                        getTooltipItems: (touchedSpots) {
+                          return touchedSpots.map((spot) {
+                            return LineTooltipItem(
+                              'Hoàn thành deadline\n${(spot.y * 100).toInt()}%',
+                              TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            );
+                          }).toList();
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ]
+          ),
+        );
+      },
+    );
+  }
+
+  // Gợi ý
+  Widget _buildSuggestionsWidget(List<TaskModel> tasks) {
+    return FutureBuilder<List<String>>(
+      future: Future.wait([
+        _deadlineService.getAllDeadlines().first,
+        _subjectService.getAllSubjects().first,
+      ]).then((data) {
+        final deadlines = data[0] as List<DeadlineModel>;
+        final subjects = data[1] as List<SubjectModel>;
+
+        return getImprovementSuggestions(
+          tasks: tasks,
+          deadlines: deadlines,
+          subjects: subjects,
+        );
+      }),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text("Lỗi khi lấy gợi ý: ${snapshot.error}"));
+        }
+
+        final suggestions = snapshot.data ?? [];
+
+        if (suggestions.isEmpty) {
+          return Text("Hiện tại không có gợi ý nào. Bạn đang làm rất tốt!");
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Gợi ý cải thiện hiệu suất",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFocusTimeHeatmap(List<TaskModel> tasks) {
-    // Placeholder for focus time heatmap implementation
-    return Container(
-      height: 200,
-      padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 2,
-            blurRadius: 10,
-            offset: Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Center(
-        child: Text(
-          'đói content',
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTaskTypeChart(List<TaskModel> tasks) {
-    // Placeholder for task type chart implementation
-    return Container(
-      height: 200,
-      padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 2,
-            blurRadius: 10,
-            offset: Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Center(
-        child: Text(
-          'đói content 2',
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 14,
-          ),
-        ),
-      ),
+            SizedBox(height: 10),
+            ...suggestions.map((s) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: Row(
+                children: [
+                  Icon(Icons.lightbulb_outline, color: Colors.amber),
+                  SizedBox(width: 8),
+                  Expanded(child: Text(s)),
+                ],
+              ),
+            )),
+          ],
+        );
+      },
     );
   }
 }

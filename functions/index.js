@@ -164,3 +164,29 @@ exports.onDeadlineDeleted = onDocumentDeleted("deadlines/{deadlineId}", async (e
     logger.error("❌ Lỗi khi xử lý xóa scheduledDeadlineNotifications:", error);
   }
 });
+
+exports.cleanUpTaskNotifications = onDocumentDeleted("tasks/{taskId}", async (event) => {
+  const deletedTaskId = event.params.taskId;
+  const db = getFirestore();
+
+  try {
+    const snapshot = await db.collection("scheduledNotifications")
+      .where("taskId", "==", deletedTaskId)
+      .get();
+
+    if (snapshot.empty) {
+      logger.info(`⚠️ Không tìm thấy thông báo nào liên quan đến task ${deletedTaskId}`);
+      return;
+    }
+
+    const batch = db.batch();
+    snapshot.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+    logger.info(`🧹 Đã xóa ${snapshot.size} thông báo liên quan đến task ${deletedTaskId}`);
+  } catch (error) {
+    logger.error("❌ Lỗi khi xóa thông báo liên quan đến task:", error);
+  }
+});
