@@ -810,6 +810,7 @@ class _CustomTimetableScreemState extends State<CustomTimetableScreem> {
                 //timeStart: selectedDate,
                 timeEnd: selectedDate,
                 subject: selectedSubjectName!,
+                idSubject: selectedSubjectId!,
                 deadlineName: deadlineController.text,
                 deadlineColor: selectedColor,
               );

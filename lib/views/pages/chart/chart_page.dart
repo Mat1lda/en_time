@@ -271,6 +271,12 @@ class _ChartPageState extends State<ChartPage> {
         final totalDeadlines = weeklyDeadlines.length;
 
         // Lọc môn học
+        // final subjects = snapshot.data![1] as List;
+        // final weeklySubject = subjects.where((d) =>
+        // d.timeEnd.isAfter(monday.subtract(const Duration(days: 1))) &&
+        //     d.timeEnd.isBefore(sunday)).toList();
+        // final completedSub = weeklySubject.where((d) => d.timeEnd.isBefore(now)).length;
+
         final subjects = snapshot.data![1] as List;
         final subjectOccurrencesThisWeek = subjects.expand((subject) {
           final List<DateTime> occurrences = [];
@@ -338,6 +344,7 @@ class _ChartPageState extends State<ChartPage> {
                     icon: Icons.school,
                     title: "Lớp học",
                     value: "$attendedSubjects/$totalSubjectsThisWeek",
+                    //value: "$completedSub/${weeklySubject.length}",
                     color: Colors.blue,
                   ),
                 ),

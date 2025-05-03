@@ -8,6 +8,7 @@ class DeadlineModel {
   //final DateTime timeStart;
   final DateTime timeEnd;
   final String subject;
+  final String? idSubject;
   final String deadlineName;
   final Color deadlineColor;
   final bool isDone;
@@ -18,6 +19,7 @@ class DeadlineModel {
     //required this.timeStart,
     required this.timeEnd,
     required this.subject,
+    this.idSubject,
     required this.deadlineName,
     required this.deadlineColor,
     this.isDone = false,
@@ -30,6 +32,7 @@ class DeadlineModel {
       //'timeStart': timeStart.toIso8601String(),
       'timeEnd': timeEnd.toIso8601String(),
       'subject': subject,
+      'idSubject': idSubject,
       'deadlineName': deadlineName,
       'deadlineColor': deadlineColor.value,
       'isDone': isDone,
@@ -64,6 +67,7 @@ class DeadlineModel {
         //timeStart: parseDateTime(map['timeStart']),
         timeEnd: parseDateTime(map['timeEnd']),
         subject: map['subject'] ?? '',
+        idSubject: map['idSubject'] ?? '',
         deadlineName: map['deadlineName'] ?? '',
         deadlineColor: Color(map['deadlineColor'] ?? 0xffC58BF2),
         isDone: map['isDone'] ?? false,
@@ -77,6 +81,7 @@ class DeadlineModel {
         //timeStart: DateTime.now(),
         timeEnd: DateTime.now().add(Duration(hours: 1)),
         subject: map['subject'] ?? 'Default Subject',
+        idSubject: map['idSubject'] ?? 'Default idSubject',
         deadlineName: map['deadlineName'] ?? 'Default Deadline',
         deadlineColor: Color(0xffC58BF2), // Default color
         isDone: false,
