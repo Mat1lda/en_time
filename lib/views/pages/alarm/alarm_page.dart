@@ -1,16 +1,63 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../../components/colors.dart';
 import '../../../database/models/alarm_model.dart';
 import '../../../database/services/alarm_services.dart';
 import 'add_alarm_view.dart';
+import 'alarm_extension.dart';
 
-class AlarmPage extends StatelessWidget {
+class AlarmPage extends StatefulWidget {
+
+  @override
+  _AlarmPageState createState() => _AlarmPageState();
+}
+
+class _AlarmPageState extends State<AlarmPage> {
   final AlarmService _alarmService = AlarmService();
+  Map<String, Timer> _timers = {};
+
+  @override
+  void dispose() {
+    _timers.values.forEach((timer) => timer.cancel());
+    super.dispose();
+  }
 
   String _formatTime(TimeOfDay time) {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
+  }
+
+  String _getTimeUntilAlarm(TimeOfDay alarmTime, Map<WeekDay, bool> repeatDays) {
+    if (!_hasActiveRepeatDays(repeatDays)) return '';
+    
+    DateTime now = DateTime.now();
+    DateTime alarmDateTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      alarmTime.hour,
+      alarmTime.minute,
+    );
+
+    if (alarmDateTime.isBefore(now)) {
+      alarmDateTime = alarmDateTime.add(Duration(days: 1));
+    }
+
+    while (!repeatDays[WeekDay.values[alarmDateTime.weekday - 1]]!) {
+      alarmDateTime = alarmDateTime.add(Duration(days: 1));
+    }
+
+    Duration timeUntil = alarmDateTime.difference(now);
+    
+    if (timeUntil.inDays > 0) {
+      return '${timeUntil.inDays} ngày ${timeUntil.inHours % 24} giờ';
+    } else if (timeUntil.inHours > 0) {
+      return '${timeUntil.inHours} giờ ${timeUntil.inMinutes % 60} phút';
+    } else {
+      return '${timeUntil.inMinutes} phút';
+    }
   }
 
   @override
@@ -125,9 +172,31 @@ class AlarmPage extends StatelessWidget {
                             fontSize: 20,
                           ),
                         ),
-                        subtitle: Text(
-                          alarm.alarmName,
-                          style: TextStyle(color: Colors.grey),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              alarm.alarmName,
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                            if (alarm.isEnabled) StreamBuilder<String>(
+                              stream: Stream.periodic(
+                                Duration(minutes: 1),
+                                (_) => _getTimeUntilAlarm(alarm.time, alarm.repeatDays),
+                              ).startWith(_getTimeUntilAlarm(alarm.time, alarm.repeatDays)),
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData) return SizedBox.shrink();
+                                return Text(
+                                  'Còn ${snapshot.data}',
+                                  style: TextStyle(
+                                    color: Color(0xFFE293F5),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
                         ),
                         trailing: Switch(
                           value: alarm.isEnabled,
