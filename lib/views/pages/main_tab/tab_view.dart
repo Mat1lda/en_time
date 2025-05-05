@@ -1,5 +1,6 @@
 import 'package:en_time/views/pages/chart/chart_page.dart';
 import 'package:en_time/views/pages/profile_page/profile_page.dart';
+import 'package:en_time/views/pages/time_table/subject_overview_view.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -100,7 +101,7 @@ class _MainTabViewState extends State<MainTabView> {
                 isActive: selectTab == 2,
                 onTap: () {
                   selectTab = 2;
-                  currentTab = CustomTimetableScreem();
+                  currentTab = SubjectOverviewView();
                   if (mounted) {
                     setState(() {});
                   }

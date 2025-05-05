@@ -14,6 +14,75 @@ class RemindTaskView extends StatefulWidget {
 class _RemindTaskViewState extends State<RemindTaskView> {
   final TaskService _taskService = TaskService();
 
+  int _comparePriority(TaskModel a, TaskModel b) {
+    // Explicit numeric values for each priority level
+    int getPriorityValue(TaskPriority priority) {
+      switch (priority) {
+        case TaskPriority.critical:
+          return 4;  // Highest priority (Khẩn cấp)
+        case TaskPriority.high:
+          return 3;
+        case TaskPriority.medium:
+          return 2;
+        case TaskPriority.low:
+          return 1;
+        default:
+          return 0;
+      }
+    }
+
+    // Compare priorities first
+    final priorityComparison = getPriorityValue(b.priority).compareTo(getPriorityValue(a.priority));
+
+    // If priorities are different, return priority comparison
+    if (priorityComparison != 0) {
+      return priorityComparison;
+    }
+
+    // If priorities are equal, compare by time
+    try {
+      final timeA = _parseTimeString(a.timeStart);
+      final timeB = _parseTimeString(b.timeStart);
+      return timeA.compareTo(timeB);
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  DateTime _parseTimeString(String timeStr) {
+    final now = DateTime.now();
+    final lowercaseTime = timeStr.toLowerCase();
+
+    try {
+      if (lowercaseTime.contains('am') || lowercaseTime.contains('pm')) {
+        // Handle 12-hour format
+        final time = lowercaseTime.replaceAll(RegExp(r'[ap]m'), '').trim().split(':');
+        var hour = int.parse(time[0]);
+        final minute = int.parse(time[1]);
+
+        if (lowercaseTime.contains('pm') && hour != 12) {
+          hour += 12;
+        }
+        if (lowercaseTime.contains('am') && hour == 12) {
+          hour = 0;
+        }
+
+        return DateTime(now.year, now.month, now.day, hour, minute);
+      } else {
+        // Handle 24-hour format
+        final time = timeStr.split(':');
+        return DateTime(
+            now.year,
+            now.month,
+            now.day,
+            int.parse(time[0]),
+            int.parse(time[1])
+        );
+      }
+    } catch (e) {
+      return now;
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -64,6 +133,8 @@ class _RemindTaskViewState extends State<RemindTaskView> {
           }
 
           final tasks = snapshot.data ?? [];
+          // Sort tasks by priority and time
+          tasks.sort(_comparePriority);
 
           if (tasks.isEmpty) {
             return Center(

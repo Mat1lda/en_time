@@ -26,6 +26,77 @@ class _TaskScheduleViewState extends State<TaskScheduleView> {
     _selectedDateAppBBar = DateTime.now();
   }
 
+  int _comparePriority(TaskModel a, TaskModel b) {
+    // Explicit numeric values for each priority level
+    int getPriorityValue(TaskPriority priority) {
+      switch (priority) {
+        case TaskPriority.critical:
+          return 4;  // Highest priority (Khẩn cấp)
+        case TaskPriority.high:
+          return 3;
+        case TaskPriority.medium:
+          return 2;
+        case TaskPriority.low:
+          return 1;
+        default:
+          return 0;
+      }
+    }
+
+    // Compare priorities first
+    final priorityComparison = getPriorityValue(b.priority).compareTo(getPriorityValue(a.priority));
+    
+    // If priorities are different, return priority comparison
+    if (priorityComparison != 0) {
+      return priorityComparison;
+    }
+
+    // If priorities are equal, compare by time
+    try {
+      final timeA = _parseTimeString(a.timeStart);
+      final timeB = _parseTimeString(b.timeStart);
+      return timeA.compareTo(timeB);
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  // Add this helper method to parse time strings
+  DateTime _parseTimeString(String timeStr) {
+    final now = DateTime.now();
+    final lowercaseTime = timeStr.toLowerCase();
+    
+    try {
+      if (lowercaseTime.contains('am') || lowercaseTime.contains('pm')) {
+        // Handle 12-hour format
+        final time = lowercaseTime.replaceAll(RegExp(r'[ap]m'), '').trim().split(':');
+        var hour = int.parse(time[0]);
+        final minute = int.parse(time[1]);
+        
+        if (lowercaseTime.contains('pm') && hour != 12) {
+          hour += 12;
+        }
+        if (lowercaseTime.contains('am') && hour == 12) {
+          hour = 0;
+        }
+        
+        return DateTime(now.year, now.month, now.day, hour, minute);
+      } else {
+        // Handle 24-hour format
+        final time = timeStr.split(':');
+        return DateTime(
+          now.year, 
+          now.month, 
+          now.day, 
+          int.parse(time[0]), 
+          int.parse(time[1])
+        );
+      }
+    } catch (e) {
+      return now;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     var media = MediaQuery.of(context).size;
@@ -166,6 +237,9 @@ class _TaskScheduleViewState extends State<TaskScheduleView> {
                   return Center(child: Text('Không có công việc nào trong ngày này'));
                 }
 
+                // Sort tasks by priority
+                tasks.sort(_comparePriority);
+
                 return SingleChildScrollView(
                   child: Column(
                     children: tasks.map((task) => _buildTaskItem(task)).toList(),
@@ -245,31 +319,5 @@ class _TaskScheduleViewState extends State<TaskScheduleView> {
         );
       },
     );
-  }
-}
-
-enum TaskPriority { low, medium, high }
-
-extension TaskPriorityExtension on TaskPriority {
-  Color getColor() {
-    switch (this) {
-      case TaskPriority.low:
-        return Colors.green;
-      case TaskPriority.medium:
-        return Colors.orange;
-      case TaskPriority.high:
-        return Colors.red;
-    }
-  }
-
-  String toVietnamese() {
-    switch (this) {
-      case TaskPriority.low:
-        return 'Thấp';
-      case TaskPriority.medium:
-        return 'Trung bình';
-      case TaskPriority.high:
-        return 'Cao';
-    }
   }
 }

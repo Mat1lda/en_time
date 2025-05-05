@@ -6,6 +6,7 @@ import 'package:en_time/views/pages/alarm/alarm_page.dart';
 import 'package:en_time/views/pages/chart/chart_page.dart';
 import 'package:en_time/views/pages/home/deadline_page.dart';
 import 'package:en_time/views/pages/note/note_page.dart';
+import 'package:en_time/views/pages/task_schedule/focus_timer_mode_page.dart';
 import 'package:en_time/views/pages/task_schedule/remind_task_view.dart';
 import 'package:en_time/views/pages/time_table/custom_timetable_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -330,9 +331,19 @@ class HomeView extends StatelessWidget {
                                     StreamBuilder<List<TaskModel>>(
                                       stream: taskService.getTasksByDay(DateTime.now()),
                                       builder: (context, snapshot) {
-                                        final int taskCount = snapshot.data?.length ?? 0;
+                                        if (snapshot.hasData) {
+                                          // Filter tasks that are not done
+                                          final incompleteTasks = snapshot.data!.where((task) => !task.isDone).length;
+                                          return Text(
+                                            "$incompleteTasks nhiệm vụ cần hoàn thành",
+                                            style: TextStyle(
+                                              color: Colors.white.withOpacity(0.8),
+                                              fontSize: 12,
+                                            ),
+                                          );
+                                        }
                                         return Text(
-                                          "$taskCount nhiệm vụ cần hoàn thành",
+                                          "0 nhiệm vụ cần hoàn thành",
                                           style: TextStyle(
                                             color: Colors.white.withOpacity(0.8),
                                             fontSize: 12,
@@ -518,6 +529,20 @@ class HomeView extends StatelessWidget {
                             },
                           ),
                           _buildCategoryCard(
+                            icon: Icons.timelapse,
+                            title: "Đếm ngược",
+                            subtitle: "Cùng tập trung nào",
+                            color: Colors.blue,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => FocusTimerPage(),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildCategoryCard(
                             icon: Icons.event_note,
                             title: "Nhắc nhở",
                             subtitle: "Sự kiện quan trọng",
@@ -527,20 +552,6 @@ class HomeView extends StatelessWidget {
                                   MaterialPageRoute(builder:
                                       (context) => RemindTaskView(),
                                   )
-                              );
-                            },
-                          ),
-                          _buildCategoryCard(
-                            icon: Icons.insert_chart_outlined,
-                            title: "Xem biểu đồ",
-                            subtitle: "Đánh giá hiệu suất",
-                            color: Colors.blue,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ChartPage(),
-                                ),
                               );
                             },
                           ),
@@ -785,7 +796,7 @@ class HomeView extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 150,
+        width: 150 ,
         margin: EdgeInsets.only(right: 15),
         padding: EdgeInsets.all(15),
         decoration: BoxDecoration(

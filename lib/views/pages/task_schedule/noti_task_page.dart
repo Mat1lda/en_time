@@ -102,18 +102,75 @@ class NotificationTaskPage extends StatelessWidget {
                 future: firestore.collection("tasks").doc(taskId).get(),
                 builder: (context, taskSnapshot) {
                   if (taskSnapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
+                    return const Center(child: CircularProgressIndicator());
                   }
 
                   if (taskSnapshot.hasError) {
                     return Center(child: Text('Lỗi khi lấy thông tin task'));
                   }
 
-                  if (!taskSnapshot.hasData) {
-                    return SizedBox.shrink(); // Nếu không có task
+                  // Check if document exists and has data
+                  if (!taskSnapshot.hasData || !taskSnapshot.data!.exists) {
+                    // Return a widget showing that the task no longer exists
+                    return Container(
+                      margin: EdgeInsets.only(bottom: 10),
+                      padding: EdgeInsets.all(15),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            spreadRadius: 1,
+                            blurRadius: 1,
+                            offset: Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              Icons.error_outline,
+                              color: Colors.grey,
+                              size: 20,
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Đã thông báo lúc: ${dateToString(notificationTime, formatStr: "dd/MM/yyyy HH:mm")}",
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                SizedBox(height: 5),
+                                Text(
+                                  "Công việc đã bị xóa",
+                                  style: TextStyle(
+                                    color: Colors.grey[800],
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
                   }
 
-                  final taskData = taskSnapshot.data?.data() as Map<String, dynamic>;
+                  final taskData = taskSnapshot.data!.data() as Map<String, dynamic>;
                   final taskType = taskData["taskType"] ?? "Unknown"; // Lấy taskType
 
                   // Xác định màu nền cho thông báo dựa trên taskType

@@ -116,14 +116,16 @@ class TaskModel {
       isDone: map['isDone'] ?? false,
       taskType: map['taskType'] ?? '',
       userId: map['userId'] ?? '',
-      priority: TaskPriority.values[map['priority'] ?? TaskPriority.medium.index],
+      priority: map['priority'] != null 
+          ? TaskPriority.values[map['priority']] 
+          : TaskPriority.medium,
     );
   }
 
   TaskStatus getStatus() {
     if (isDone) return TaskStatus.completed;
     final now = DateTime.now();
-    // Parse time string safely (handles both 12-hour and 24-hour formats)
+    
     try {
       final timeComponents = timeStart.toLowerCase();
       int hour;
@@ -156,15 +158,29 @@ class TaskModel {
         minute,
       );
 
-      if (now.isBefore(taskDateTime)) {
-        return TaskStatus.notStarted;
-      } else if (now.isAfter(taskDateTime) && !isDone) {
-        return TaskStatus.inProgress;
-      } else {
-        return TaskStatus.inProgress;
+      // Check xem task co phai la o nhung gnay truoc hay khong
+      if (now.year > taskDateTime.year || 
+          (now.year == taskDateTime.year && now.month > taskDateTime.month) ||
+          (now.year == taskDateTime.year && now.month == taskDateTime.month && now.day > taskDateTime.day)) {
+        return TaskStatus.overdue;
       }
+
+      // check ngay hom nay
+      if (now.year == taskDateTime.year && 
+          now.month == taskDateTime.month && 
+          now.day == taskDateTime.day) {
+        if (now.isBefore(taskDateTime)) {
+          return TaskStatus.notStarted;
+        } else {
+          return TaskStatus.inProgress;
+        }
+      }
+
+      // nhung ngay tuong lai thia auto chua bat dau
+      return TaskStatus.notStarted;
+      
     } catch (e) {
-      // Return notStarted as fallback if time parsing fails
+      // loi gi thi cu chua bat dau
       return TaskStatus.notStarted;
     }
   }
