@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../database/models/note_model.dart';
 import '../../../database/services/note_service.dart';
 import 'note_detail_page.dart';
+import 'note_style_utils.dart';
 
 class NotePage extends StatefulWidget {
   final Note? note;
@@ -15,44 +16,61 @@ class NotePage extends StatefulWidget {
 }
 
 class _NotePageState extends State<NotePage> {
-
   final NoteService _noteService = NoteService();
   String _selectedCategory = 'Tất cả';
   final _searchController = TextEditingController();
+  String _searchQuery = '';
+  final FocusNode _searchFocusNode = FocusNode();
+  bool _isSearching = false;
 
-  Color parseColor(String? hexColor, {Color fallback = Colors.black}) {
-    if (hexColor == null || hexColor.isEmpty) return fallback;
-
-    try {
-      // Nếu chỉ có 6 ký tự thì thêm 'FF' làm opacity (fully opaque)
-      if (hexColor.length == 6) {
-        hexColor = 'FF$hexColor';
-      }
-      // Nếu có # ở đầu thì bỏ đi
-      if (hexColor.startsWith('#')) {
-        hexColor = hexColor.replaceFirst('#', '');
-      }
-      return Color(int.parse(hexColor, radix: 16));
-    } catch (e) {
-      return fallback;
-    }
+  @override
+  void initState() {
+    super.initState();
+    // Bỏ listener tự động để chỉ tìm kiếm khi nhấn nút
   }
 
+  void _performSearch() {
+    setState(() {
+      _searchQuery = _searchController.text.toLowerCase().trim();
+      _isSearching = true;
+    });
+    // Ẩn bàn phím khi tìm kiếm xong
+    _searchFocusNode.unfocus();
+  }
+
+  void _clearSearch() {
+    setState(() {
+      _searchController.clear();
+      _searchQuery = '';
+      _isSearching = false;
+    });
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
   List<Note> _filterNotes(List<Note> notes) {
-    final visibleNotes = notes.where((note) => note.isHidden != true).toList();
-    if (_selectedCategory == 'Tất cả') {
-      return visibleNotes;
+    var filteredNotes = notes.where((note) => note.isHidden != true).toList();
+    
+    if (_selectedCategory != 'Tất cả') {
+      filteredNotes = filteredNotes
+          .where((note) => note.category == _selectedCategory)
+          .toList();
     }
-    return visibleNotes
-        .where((note) => note.category == _selectedCategory)
-        .toList();
+    
+    if (_searchQuery.isNotEmpty) {
+      filteredNotes = filteredNotes.where((note) {
+        final titleMatch = note.title.toLowerCase().contains(_searchQuery);
+        final contentMatch = note.content.toLowerCase().contains(_searchQuery);
+        return titleMatch || contentMatch;
+      }).toList();
+    }
+    
+    return filteredNotes;
   }
 
   @override
@@ -73,17 +91,66 @@ class _NotePageState extends State<NotePage> {
             padding: EdgeInsets.all(16),
             child: TextField(
               controller: _searchController,
+              focusNode: _searchFocusNode,
               decoration: InputDecoration(
                 border: InputBorder.none,
                 hintText: 'Tìm kiếm ghi chú',
-                prefixIcon: Icon(Icons.search, color: Colors.grey),
+                prefixIcon: IconButton(
+                  icon: Icon(Icons.search, color: Colors.grey),
+                  onPressed: _performSearch,
+                ),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.clear, color: Colors.grey),
+                        onPressed: _clearSearch,
+                      )
+                    : null,
                 filled: true,
+                fillColor: Colors.white,
                 contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 hintStyle: TextStyle(color: Colors.grey[400]),
               ),
               style: TextStyle(color: Colors.black54),
+              onSubmitted: (_) => _performSearch(),
+              textInputAction: TextInputAction.search,
             ),
           ),
+          // Hiện thị trạng thái tìm kiếm nếu đang tìm kiếm
+          if (_isSearching && _searchQuery.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Text(
+                    'Kết quả tìm kiếm cho: ',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      '"$_searchQuery"',
+                      style: TextStyle(
+                        color: AppColors.primaryColor1,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _clearSearch,
+                    child: Text('Xóa'),
+                    style: TextButton.styleFrom(
+                      minimumSize: Size(0, 0),
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Container(
             height: 40,
             child: StreamBuilder<List<String>>(
@@ -139,81 +206,145 @@ class _NotePageState extends State<NotePage> {
                 final notes = _filterNotes(snapshot.data!);
                 if (notes.isEmpty) {
                   return Center(
-                    child: Text(
-                      'Chưa có ghi chú',
-                      style: TextStyle(color: Colors.grey[400]),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          _searchQuery.isNotEmpty ? Icons.search_off : Icons.note_alt_outlined,
+                          size: 48,
+                          color: Colors.grey[400],
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          _searchQuery.isNotEmpty
+                              ? 'Không tìm thấy ghi chú nào'
+                              : 'Chưa có ghi chú',
+                          style: TextStyle(color: Colors.grey[400]),
+                        ),
+                        if (_searchQuery.isNotEmpty)
+                          TextButton(
+                            onPressed: _clearSearch,
+                            child: Text('Xóa tìm kiếm'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.primaryColor1,
+                            ),
+                          ),
+                      ],
                     ),
                   );
                 }
-
-                return Padding(
-                  padding: EdgeInsets.all(8),
-                  child: GridView.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                      childAspectRatio: 1.1,
-                    ),
-                    itemCount: notes.length,
-                    itemBuilder: (context, index) {
-                      final note = notes[index];
-                      final bgColor = parseColor(note.themeColor, fallback: Colors.black); // mặc định màu đen
-                      final textColor = parseColor(note.fontColor, fallback: Colors.black); // mặc định màu trắng
-                      final fontSize = note.fontSize?.toDouble() ?? 14.0;
-
-                      return Card(
-                        elevation: 1,
-                        color: bgColor,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: InkWell(
-                          onLongPress: () => _deleteNote(note),
-                          onTap: () => _openNoteDetail(note),
-                          borderRadius: BorderRadius.circular(12),
-                          child: Padding(
-                            padding: EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  note.title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: fontSize + 2,
-                                    fontWeight: FontWeight.w600,
-                                    color: textColor,
-                                  ),
-                                ),
-                                SizedBox(height: 8),
-                                Expanded(
-                                  child: Text(
-                                    note.content,
-                                    maxLines: 4,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: fontSize,
-                                      color: textColor.withOpacity(0.85),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(height: 8),
-                                Text(
-                                  _formatDate(note.updatedAt),
-                                  style: TextStyle(
-                                    color: textColor.withOpacity(0.7),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
+                
+                // Hiển thị số lượng kết quả tìm được nếu đang tìm kiếm
+                return Column(
+                  children: [
+                    if (_isSearching && _searchQuery.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0, left: 16.0),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Tìm thấy ${notes.length} kết quả',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
                             ),
                           ),
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.all(8),
+                        child: GridView.builder(
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
+                            childAspectRatio: 1.1,
+                          ),
+                          itemCount: notes.length,
+                          itemBuilder: (context, index) {
+                            final note = notes[index];
+                            final bgColor = NoteStyleUtils.parseColor(note.themeColor, fallback: Colors.white);
+                            final textColor = note.fontColor != null 
+                                ? NoteStyleUtils.parseColor(note.fontColor)
+                                : NoteStyleUtils.getContrastingTextColor(bgColor);
+                            final fontSize = note.fontSize?.toDouble() ?? 14.0;
+
+                            return Card(
+                              elevation: 1,
+                              color: bgColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: InkWell(
+                                onLongPress: () => _deleteNote(note),
+                                onTap: () => _openNoteDetail(note),
+                                borderRadius: BorderRadius.circular(12),
+                                child: Padding(
+                                  padding: EdgeInsets.all(12),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        note.title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: fontSize + 2,
+                                          fontWeight: FontWeight.w600,
+                                          color: textColor,
+                                        ),
+                                      ),
+                                      SizedBox(height: 8),
+                                      Expanded(
+                                        child: Text(
+                                          note.content,
+                                          maxLines: 4,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: fontSize,
+                                            color: textColor.withOpacity(0.85),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(height: 8),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            _formatDate(note.updatedAt),
+                                            style: TextStyle(
+                                              color: textColor.withOpacity(0.7),
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          if (note.category != 'Chưa phân loại')
+                                            Container(
+                                              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: textColor.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                note.category,
+                                                style: TextStyle(
+                                                  color: textColor.withOpacity(0.8),
+                                                  fontSize: 10,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               },
             ),

@@ -108,6 +108,12 @@ class _NoteDetailPageState extends State<NoteDetailPage> {
       titleFontSize: 20,
       contentFontSize: 16,
     ),
+    Colors.black: ThemeStyle(
+      backgroundColor: Colors.black,
+      textColor: Colors.white,
+      titleFontSize: 20,
+      contentFontSize: 16,
+    ),
   };
 
   @override
@@ -362,22 +368,22 @@ class _NoteDetailPageState extends State<NoteDetailPage> {
             onPressed: _isLoading ? null : _saveNote,
             tooltip: 'Lưu ghi chú',
           ),
-          PopupMenuButton<String>(
-            icon: Icon(Icons.more_vert, color: AppColors.primaryColor1),
-            onSelected: (value) {
-              if (value == 'delete') {
-                _deleteNote();
-              } else if (value == 'hide') {
-                _hideNote();
-              }
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'delete', child: Text('Xóa')),
-              PopupMenuItem(value: 'hide', child: Text('Ẩn')),
-              PopupMenuItem(value: 'move', child: Text('Chuyển tới')),
-              PopupMenuItem(value: 'remind', child: Text('Nhắc nhở')),
-            ],
-          ),
+          // PopupMenuButton<String>(
+          //   icon: Icon(Icons.more_vert, color: AppColors.primaryColor1),
+          //   onSelected: (value) {
+          //     if (value == 'delete') {
+          //       _deleteNote();
+          //     } else if (value == 'hide') {
+          //       _hideNote();
+          //     }
+          //   },
+          //   itemBuilder: (context) => const [
+          //     PopupMenuItem(value: 'delete', child: Text('Xóa')),
+          //     PopupMenuItem(value: 'hide', child: Text('Ẩn')),
+          //     PopupMenuItem(value: 'move', child: Text('Chuyển tới')),
+          //     PopupMenuItem(value: 'remind', child: Text('Nhắc nhở')),
+          //   ],
+          // ),
         ],
       ),
       body: _isLoading

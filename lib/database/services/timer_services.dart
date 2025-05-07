@@ -12,7 +12,7 @@ class TimerService {
         'message': message
       });
     } on PlatformException catch (e) {
-      print('Failed to show notification: ${e.message}');
+      print('Failed to show notification: ${e.message}'); 
     }
   }
 

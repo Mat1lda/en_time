@@ -117,8 +117,9 @@ async function sendScheduledNotifications() {
   });
 
   await Promise.all(tasks);
-  console.log("\n🎉 Tất cả thông báo của task đã được xử lý.");
+  console.log("\n🎉 Tất cả thông báo của task -10 đã được xử lý.");
 }
+
 
 async function sendScheduledDeadlineNotifications() {
   const now = new Date();
@@ -300,12 +301,141 @@ async function sendAlarmNotifications() {
   console.log("\n🎉 Tất cả alarm đã được xử lý.");
 }
 
+// Thêm hàm này để gửi email cho các task khẩn cấp
 
+async function sendCriticalTaskStartEmail() {
+  const now = new Date();
+  console.log(`\n⏰ Thời điểm hiện tại: ${now.toISOString()}`);
+  console.log("📥 Đang tìm thông báo task khẩn cấp...");
+
+  // Tìm các thông báo scheduledNotifications chưa gửi và đến thời gian thông báo
+  const snapshot = await firestore
+    .collection("scheduledNotifications")
+    .where("sent", "==", false)
+    .where("notificationTime", "<=", now)
+    .get();
+
+  if (snapshot.empty) {
+    console.log("⏳ Không có thông báo task khẩn cấp nào cần kiểm tra.");
+    return;
+  }
+
+  const tasks = snapshot.docs.map(async (doc) => {
+    const data = doc.data();
+    const { userId, taskId, title, notificationTime } = data;
+
+    // Lấy thông tin task để kiểm tra xem nó có phải là task khẩn cấp không
+    const taskDoc = await firestore.collection("tasks").doc(taskId).get();
+    if (!taskDoc.exists) {
+      console.warn(`⚠️ Không tìm thấy task: ${taskId}`);
+      return;
+    }
+
+    const taskData = taskDoc.data();
+    // Kiểm tra xem task có phải là mức độ ưu tiên khẩn cấp (priority = 0) không
+    // Trong TaskModel, TaskPriority.critical có index là 0
+    if (taskData.priority !== 0) {  // 0 là giá trị của TaskPriority.critical
+      console.log(`⏭️ Task ${taskId} không phải là task khẩn cấp.`);
+      return;
+    }
+
+    console.log(`\n📌 Đang xử lý task KHẨN CẤP: ${taskId}`);
+    console.log(`👤 userId: ${userId}`);
+    console.log(`🕒 notificationTime: ${notificationTime.toDate().toLocaleString()}`);
+    console.log(`📝 title: ${title}`);
+    console.log(`🔥 priority: ${taskData.priority} (Khẩn cấp)`);
+    
+    // Lấy thông tin user để lấy email
+    const userDoc = await firestore.collection("users").doc(userId).get();
+    if (!userDoc.exists) {
+      console.warn(`⚠️ Không tìm thấy user: ${userId}`);
+      return;
+    }
+
+    const userData = userDoc.data();
+    const email = userData.email;
+
+    if (!email) {
+      console.warn(`⚠️ User ${userId} không có email.`);
+      return;
+    }
+
+    // Kiểm tra xem email này đã được gửi chưa
+    const emailLogSnapshot = await firestore
+      .collection("criticalTaskEmailLogs")
+      .where("taskId", "==", taskId)
+      .get();
+
+    if (!emailLogSnapshot.empty) {
+      console.log(`⏭️ Đã gửi email trước đó cho task khẩn cấp: ${taskId}`);
+      return;
+    }
+
+    console.log(`📧 Chuẩn bị gửi email cho task khẩn cấp tới: ${email}`);
+
+    // Format ngày và giờ
+    const taskDate = taskData.day ? new Date(taskData.day) : new Date();
+    const formattedDate = taskDate.toLocaleDateString('vi-VN');
+    
+    try {
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.EMAIL_USERNAME,
+          pass: process.env.EMAIL_PASSWORD,
+        },
+      });
+      const mailOptions = {
+        from: `"EnTime" <${process.env.EMAIL_USERNAME}>`,
+        to: email,
+        subject: "🚨 CẢNH BÁO: Nhiệm vụ KHẨN CẤP sắp bắt đầu!",
+        html: `
+          <div style="background-color: #f5f5f5; padding: 20px; font-family: Arial, sans-serif;">
+            <div style="background-color: #ffffff; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              <h2 style="color:#e53935; margin-top: 0;">⚠️ NHIỆM VỤ KHẨN CẤP SẮP BẮT ĐẦU</h2>
+              <p>Chào bạn,</p>
+              <p>Bạn có một nhiệm vụ <strong style="color: red;">KHẨN CẤP</strong> sắp bắt đầu trong 10 phút nữa:</p>
+              <div style="background-color: #ffebee; padding: 15px; border-left: 4px solid #e53935; margin: 15px 0;">
+                <p style="margin: 0; font-size: 16px;"><strong>${title}</strong></p>
+                <p style="margin: 5px 0 0;">⏰ Ngày: ${formattedDate} - Thời gian: ${taskData.timeStart}</p>
+              </div>
+              <p>Vui lòng chuẩn bị để thực hiện nhiệm vụ này. Đây là nhiệm vụ với mức độ ưu tiên cao nhất.</p>
+              <p>Mở ứng dụng EnTime để xem chi tiết và quản lý nhiệm vụ của bạn!</p>
+              <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+              <p style="color: #757575; font-size: 13px;">Đây là email tự động. Vui lòng không trả lời email này.</p>
+              <p style="color: #757575; font-size: 13px;">Thân mến,<br/>Đội ngũ EnTime</p>
+            </div>
+          </div>
+        `,
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log(`✅ Đã gửi email về task khẩn cấp tới ${email}`);
+
+      // Lưu lại thông tin đã gửi email để tránh gửi lại nhiều lần
+      await firestore.collection("criticalTaskEmailLogs").add({
+        taskId: taskId,
+        userId: userId,
+        email: email,
+        sentAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      
+    } catch (error) {
+      console.error(`❌ Lỗi gửi email về task khẩn cấp cho ${email}:`, error);
+    }
+  });
+
+  await Promise.all(tasks);
+  console.log("\n🎉 Tất cả email về task khẩn cấp đã được xử lý.");
+}
+
+// Thêm vào cron job đã có
 cron.schedule("* * * * *", () => {
   console.log("🔁 Cron job chạy: kiểm tra notification");
   sendScheduledNotifications();
   sendScheduledDeadlineNotifications();
   sendAlarmNotifications();
+  sendCriticalTaskStartEmail(); // Thêm dòng này
 });
 
 app.post("/send-email-password", async (req, res) => {
