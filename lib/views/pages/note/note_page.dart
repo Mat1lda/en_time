@@ -157,7 +157,8 @@ class _NotePageState extends State<NotePage> {
               stream: _noteService.getCategories(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return SizedBox();
-                final categories = ['Tất cả', 'Chưa phân loại', ...?snapshot.data];
+                final allCategories = ['Tất cả', 'Chưa phân loại', ...?snapshot.data];
+                final categories = allCategories.toSet().toList();
                 return ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: EdgeInsets.symmetric(horizontal: 12),
