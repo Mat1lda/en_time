@@ -252,9 +252,9 @@ class _ChartPageState extends State<ChartPage> {
 
         // Điều kiện lọc theo tuần
         final now = DateTime.now();
-        final monday = now.subtract(Duration(days: now.weekday - 1)); // Thứ 2 đầu tuần
-        final sunday = monday.add(Duration(days: 7)); // Chủ nhật
+        final monday = now.subtract(Duration(days: now.weekday - 1)).copyWith(hour: 0, minute: 0, second: 0, millisecond: 0); // Lấy thứ Hai (Monday) của tuần hiện tại
 
+        final sunday = monday.add(Duration(days: 6)).copyWith(hour: 23, minute: 59, second: 59, millisecond: 999); // Lấy Chủ Nhật (Sunday) của tuần hiện tại
         // Lọc Task
         final weeklyTasks = tasks.where((task) =>
         task.day.isAfter(monday.subtract(const Duration(days: 1))) &&
@@ -278,20 +278,23 @@ class _ChartPageState extends State<ChartPage> {
         // final completedSub = weeklySubject.where((d) => d.timeEnd.isBefore(now)).length;
 
         final subjects = snapshot.data![1] as List;
-        final subjectOccurrencesThisWeek = subjects.expand((subject) {
+        final subjectOccurrencesThisWeek = subjects.expand((subject) { // expand() để chuyển mỗi subject thành nhiều buổi học (dạng Map) diễn ra trong tuần hiện tại.
           final List<DateTime> occurrences = [];
           DateTime current = monday;
-          while (current.isBefore(sunday.add(Duration(days: 1)))) {
+          while (current.isBefore(sunday.add(Duration(days: 1)))) { //  Duyệt từng ngày trong tuần hiện tại, từ thứ Hai (monday) đến Chủ Nhật (sunday).
             if (subject.rangeStart.isAfter(current) || subject.rangeEnd.isBefore(current)) {
+              // Bỏ qua những ngày không nằm trong phạm vi học của môn (không nằm giữa rangeStart và rangeEnd).
               current = current.add(Duration(days: 1));
               continue;
             }
             if (subject.weekdays.contains(current.weekday)) {
+              // Nếu ngày đó đúng thứ mà môn học có trong subject.weekdays (VD: [2, 4, 6] tức là T2, T4, T6), thì thêm vào danh sách buổi học.
               occurrences.add(current);
             }
             current = current.add(Duration(days: 1));
           }
           return occurrences.map((date) => {
+            //Kết quả cuối cùng là danh sách các buổi học cụ thể trong tuần hiện tại (đã ghép ngày + giờ kết thúc).
             'date': date,
             'timeEnd': DateTime(date.year, date.month, date.day, subject.timeEnd.hour, subject.timeEnd.minute),
           });
