@@ -22,14 +22,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool isLoading = false;
 
-  // 🔐 Tạo mật khẩu ngẫu nhiên
   String generateRandomPassword({int length = 8}) {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#\$%^&*!';
     Random rnd = Random.secure();
     return List.generate(length, (index) => chars[rnd.nextInt(chars.length)]).join();
   }
 
-  // 📧 Gửi mật khẩu mới qua API Node.js
   Future<void> sendEmailWithNewPassword(String email, String password) async {
     final baseUrl = kIsWeb ? "http://localhost:8000" : "http://10.0.2.2:8000"; // cho emulator
     final url = Uri.parse("$baseUrl/send-email-password");
@@ -42,13 +40,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         "password": password,
       }),
     );
-
     if (response.statusCode != 200) {
       throw Exception("Gửi email thất bại: ${response.body}");
     }
   }
 
-  // 🔁 Reset mật khẩu
   Future<void> resetPassword() async {
     final email = emailController.text.trim();
     if (email.isEmpty) {

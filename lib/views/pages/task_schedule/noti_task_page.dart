@@ -10,8 +10,7 @@ class NotificationTaskPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final FirebaseFirestore firestore = FirebaseFirestore.instance;
-    final userId = FirebaseAuth.instance.currentUser!.uid; // Lấy userId của người dùng hiện tại
-
+    final userId = FirebaseAuth.instance.currentUser!.uid;
     return Scaffold(
       backgroundColor: AppColors.white,
       appBar: AppBar(
@@ -108,10 +107,7 @@ class NotificationTaskPage extends StatelessWidget {
                   if (taskSnapshot.hasError) {
                     return Center(child: Text('Lỗi khi lấy thông tin task'));
                   }
-
-                  // Check if document exists and has data
                   if (!taskSnapshot.hasData || !taskSnapshot.data!.exists) {
-                    // Return a widget showing that the task no longer exists
                     return Container(
                       margin: EdgeInsets.only(bottom: 10),
                       padding: EdgeInsets.all(15),
@@ -171,18 +167,16 @@ class NotificationTaskPage extends StatelessWidget {
                   }
 
                   final taskData = taskSnapshot.data!.data() as Map<String, dynamic>;
-                  final taskType = taskData["taskType"] ?? "Unknown"; // Lấy taskType
-
-                  // Xác định màu nền cho thông báo dựa trên taskType
-                  Color backgroundColor = Colors.grey[200]!; // Màu mặc định
-                  Color textColor = Colors.black; // Màu chữ mặc định
+                  final taskType = taskData["taskType"] ?? "Unknown";
+                  Color backgroundColor = Colors.grey[200]!;
+                  Color textColor = Colors.black;
 
                   if (taskType == "Hoạt động ngoại khóa") {
-                    backgroundColor = Colors.blue[100]!; // Màu nền cho "Hoạt động cá nhân"
-                    textColor = Colors.blue[800]!; // Màu chữ cho "Hoạt động cá nhân"
+                    backgroundColor = Colors.blue[100]!;
+                    textColor = Colors.blue[800]!;
                   } else if (taskType == "Hoạt động cá nhân") {
-                    backgroundColor = Colors.orange[100]!; // Màu nền cho "Hoạt động ngoại khóa"
-                    textColor = Colors.orange[800]!; // Màu chữ cho "Hoạt động ngoại khóa"
+                    backgroundColor = Colors.orange[100]!;
+                    textColor = Colors.orange[800]!;
                   }
 
                   return Dismissible(
@@ -258,7 +252,7 @@ class NotificationTaskPage extends StatelessWidget {
                                 ),
                                 SizedBox(height: 5),
                                 Text(
-                                  "Loại thông báo: $taskType", // Hiển thị loại thông báo
+                                  "Loại thông báo: $taskType",
                                   style: TextStyle(
                                     color: Colors.grey,
                                     fontSize: 12,

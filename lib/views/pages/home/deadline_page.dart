@@ -92,145 +92,6 @@ class _DeadlinePageState extends State<DeadlinePage> {
     );
   }
 
-  // void _showAddDeadlineDialog() {
-  //   TextEditingController deadlineController = TextEditingController();
-  //   DateTime selectedDate = DateTime.now();
-  //   Color selectedColor = _colorCollection[Random().nextInt(_colorCollection.length)];
-  //   String? selectedSubjectId;
-  //   String? selectedSubjectName;
-  //
-  //   showDialog(
-  //     context: context,
-  //     builder: (context) => AlertDialog(
-  //       backgroundColor: Colors.white,
-  //       title: Text('Thêm Deadline', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18), textAlign: TextAlign.center,),
-  //       content: Column(
-  //         mainAxisSize: MainAxisSize.min,
-  //         children: [
-  //           StreamBuilder<List<SubjectModel>>(
-  //             stream: _subjectService.getAllSubjects(),
-  //             builder: (context, snapshot) {
-  //               if (snapshot.connectionState == ConnectionState.waiting) {
-  //                 return CircularProgressIndicator();
-  //               }
-  //
-  //               final subjects = snapshot.data ?? [];
-  //               if (subjects.isEmpty) {
-  //                 return Text('Chưa có môn học nào. Vui lòng thêm môn học trước.');
-  //               }
-  //
-  //               return DropdownButtonFormField<String>(
-  //                 decoration: InputDecoration(
-  //                   labelText: 'Tên môn học',
-  //                   border: OutlineInputBorder(),
-  //                 ),
-  //                 value: selectedSubjectId,
-  //                 items: subjects.map((subject) {
-  //                   return DropdownMenuItem<String>(
-  //                     value: subject.id,
-  //                     child: Text(subject.subject),
-  //                   );
-  //                 }).toList(),
-  //                 onChanged: (value) {
-  //                   setState(() {
-  //                     selectedSubjectId = value;
-  //                     selectedSubjectName = subjects.firstWhere((s) => s.id == value).subject;
-  //                   });
-  //                 },
-  //               );
-  //             },
-  //           ),
-  //           SizedBox(height: 16),
-  //           TextField(
-  //             controller: deadlineController,
-  //             decoration: InputDecoration(
-  //               labelText: 'Tên deadline',
-  //               hintText: 'Nhập tên deadline',
-  //               border: OutlineInputBorder(),
-  //             ),
-  //           ),
-  //           SizedBox(height: 16),
-  //           ElevatedButton(
-  //             onPressed: () async {
-  //               DateTime? pickedDate = await showDatePicker(
-  //                 context: context,
-  //                 initialDate: selectedDate,
-  //                 firstDate: DateTime.now(),
-  //                 lastDate: DateTime(2100),
-  //               );
-  //               if (pickedDate != null) {
-  //                 setState(() {
-  //                   selectedDate = DateTime(
-  //                     pickedDate.year,
-  //                     pickedDate.month,
-  //                     pickedDate.day,
-  //                     selectedDate.hour,
-  //                     selectedDate.minute
-  //                   );
-  //                 });
-  //               }
-  //             },
-  //             child: Text('Chọn ngày: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),
-  //           ),
-  //           SizedBox(height: 8),
-  //           ElevatedButton(
-  //             onPressed: () async {
-  //               TimeOfDay? pickedTime = await showTimePicker(
-  //                 context: context,
-  //                 initialTime: TimeOfDay.fromDateTime(selectedDate),
-  //               );
-  //               if (pickedTime != null) {
-  //                 setState(() {
-  //                   selectedDate = DateTime(
-  //                     selectedDate.year,
-  //                     selectedDate.month,
-  //                     selectedDate.day,
-  //                     pickedTime.hour,
-  //                     pickedTime.minute,
-  //                   );
-  //                 });
-  //               }
-  //             },
-  //             child: Text('Chọn giờ: ${TimeOfDay.fromDateTime(selectedDate).format(context)}'),
-  //           ),
-  //         ],
-  //       ),
-  //       actions: [
-  //         TextButton(
-  //           onPressed: () => Navigator.pop(context),
-  //           child: Text('Hủy'),
-  //         ),
-  //         TextButton(
-  //           onPressed: () {
-  //             if (selectedSubjectId == null || deadlineController.text.isEmpty) {
-  //               ScaffoldMessenger.of(context).showSnackBar(
-  //                 SnackBar(content: Text('Vui lòng điền đầy đủ thông tin')),
-  //               );
-  //               return;
-  //             }
-  //
-  //             // Create deadline in Firebase
-  //             DeadlineModel newDeadline = DeadlineModel(
-  //               id: DateTime.now().millisecondsSinceEpoch.toString(),
-  //               day: DateTime(selectedDate.year, selectedDate.month, selectedDate.day),
-  //               timeStart: selectedDate,
-  //               timeEnd: selectedDate.add(Duration(hours: 1)),
-  //               subject: selectedSubjectName!,
-  //               deadlineName: deadlineController.text,
-  //               deadlineColor: selectedColor,
-  //             );
-  //
-  //             _deadlineService.addDeadline(newDeadline).then((_) {
-  //               Navigator.pop(context);
-  //             });
-  //           },
-  //           child: Text('Thêm'),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
   void _showAddDeadlineDialog() {
     TextEditingController deadlineController = TextEditingController();
     DateTime selectedDate = DateTime.now();
@@ -639,25 +500,6 @@ class _DeadlinePageState extends State<DeadlinePage> {
           ),
         ),
         actions: [
-          // Container(
-          //   margin: const EdgeInsets.all(8),
-          //   decoration: BoxDecoration(
-          //     color: Colors.white,
-          //     shape: BoxShape.circle,
-          //     boxShadow: [
-          //       BoxShadow(
-          //         color: Colors.grey.withOpacity(0.15),
-          //         spreadRadius: 1,
-          //         blurRadius: 3,
-          //       ),
-          //     ],
-          //   ),
-          //   child:
-          //   IconButton(
-          //     onPressed: _showAddDeadlineDialog,
-          //     icon: Icon(Icons.add, color: AppColors.primaryColor1),
-          //   ),
-          // ),
           Container(
             margin: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -765,68 +607,6 @@ class _DeadlinePageState extends State<DeadlinePage> {
                       ],
                     ),
                     SizedBox(height: 25),
-
-                    // Action Buttons
-                    // Container(
-                    //   padding: EdgeInsets.all(20),
-                    //   decoration: BoxDecoration(
-                    //     gradient: LinearGradient(
-                    //       colors: [
-                    //         AppColors.primaryColor1.withOpacity(0.9),
-                    //         AppColors.primaryColor2.withOpacity(0.8),
-                    //       ],
-                    //       begin: Alignment.topLeft,
-                    //       end: Alignment.bottomRight,
-                    //     ),
-                    //     borderRadius: BorderRadius.circular(20),
-                    //     boxShadow: [
-                    //       BoxShadow(
-                    //         color: AppColors.primaryColor1.withOpacity(0.3),
-                    //         blurRadius: 10,
-                    //         offset: Offset(0, 5),
-                    //       ),
-                    //     ],
-                    //   ),
-                    //   child: Column(
-                    //     crossAxisAlignment: CrossAxisAlignment.start,
-                    //     children: [
-                    //       Text(
-                    //         "Quản lý deadline",
-                    //         style: TextStyle(
-                    //           color: Colors.white,
-                    //           fontSize: 18,
-                    //           fontWeight: FontWeight.w600,
-                    //         ),
-                    //       ),
-                    //       SizedBox(height: 15),
-                    //       Row(
-                    //         mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    //         children: [
-                    //           _buildActionButton(
-                    //             icon: Icons.add,
-                    //             label: "Thêm mới",
-                    //             onTap: () {
-                    //             },
-                    //           ),
-                    //           _buildActionButton(
-                    //             icon: Icons.calendar_today,
-                    //             label: "Lịch biểu",
-                    //             onTap: () {
-                    //             },
-                    //           ),
-                    //           _buildActionButton(
-                    //             icon: Icons.notifications,
-                    //             label: "Nhắc nhở",
-                    //             onTap: () {
-                    //             },
-                    //           ),
-                    //         ],
-                    //       ),
-                    //     ],
-                    //   ),
-                    // ),
-                    SizedBox(height: 25),
-
                     // Deadlines List
                     Text(
                       "Danh sách deadline",
@@ -879,7 +659,6 @@ class _DeadlinePageState extends State<DeadlinePage> {
                             ),
                           );
                         }
-
                         return ListView.builder(
                           shrinkWrap: true,
                           physics: NeverScrollableScrollPhysics(),

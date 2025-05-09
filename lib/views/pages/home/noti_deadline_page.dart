@@ -7,7 +7,6 @@ import 'package:rxdart/rxdart.dart';  // Add this import
 
 class NotificationDeadlinePage extends StatelessWidget {
   const NotificationDeadlinePage({Key? key}) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     final FirebaseFirestore firestore = FirebaseFirestore.instance;

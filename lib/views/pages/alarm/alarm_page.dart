@@ -16,10 +16,25 @@ class AlarmPage extends StatefulWidget {
 class _AlarmPageState extends State<AlarmPage> {
   final AlarmService _alarmService = AlarmService();
   Map<String, Timer> _timers = {};
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Thêm timer để cập nhật UI mỗi giây
+    _refreshTimer = Timer.periodic(Duration(seconds: 1), (_) {
+      if (mounted) {
+        setState(() {
+          // Buộc cập nhật UI
+        });
+      }
+    });
+  }
 
   @override
   void dispose() {
     _timers.values.forEach((timer) => timer.cancel());
+    _refreshTimer?.cancel();
     super.dispose();
   }
 
@@ -179,22 +194,13 @@ class _AlarmPageState extends State<AlarmPage> {
                               alarm.alarmName,
                               style: TextStyle(color: Colors.grey),
                             ),
-                            if (alarm.isEnabled) StreamBuilder<String>(
-                              stream: Stream.periodic(
-                                Duration(minutes: 1),
-                                (_) => _getTimeUntilAlarm(alarm.time, alarm.repeatDays),
-                              ).startWith(_getTimeUntilAlarm(alarm.time, alarm.repeatDays)),
-                              builder: (context, snapshot) {
-                                if (!snapshot.hasData) return SizedBox.shrink();
-                                return Text(
-                                  'Còn ${snapshot.data}',
-                                  style: TextStyle(
-                                    color: Color(0xFFE293F5),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                );
-                              },
+                            if (alarm.isEnabled) Text(
+                              'Còn ${_getTimeUntilAlarm(alarm.time, alarm.repeatDays)}',
+                              style: TextStyle(
+                                color: Color(0xFFE293F5),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ],
                         ),

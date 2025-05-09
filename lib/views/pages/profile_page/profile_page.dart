@@ -109,7 +109,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                         if (avatarUrl != null && avatarUrl.isNotEmpty) {
                           return CircleAvatar(
-                            radius: 40,
+                            radius: 40, 
                             backgroundImage: NetworkImage(avatarUrl),
                           );
                         } else {
